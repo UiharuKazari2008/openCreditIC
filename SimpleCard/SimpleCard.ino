@@ -39,13 +39,22 @@ void setup() {
   checkWiFiConnection();
 
   server.on("/block_overide", [=]() {
-    if (blockOverride = 0) {
-      blockOverride = 1
+    if (blockOverride == 0) {
+      blockOverride = 1;
     } else {
-      blockOverride = 0
+      blockOverride = 0;
     }
     enableState = 1;
-    server.send(200, "text/plain", (blockOverride) ? "Overided" : "Normal");
+    server.send(200, "text/plain", ((blockOverride == 1) ? "Overided" : "Normal"));
+  });
+  server.on("/credit", [=]() {
+    Serial.println("Card OK, Dispense Credit");
+      digitalWrite(RELAY_PIN, HIGH);
+      delay(100);
+      digitalWrite(RELAY_PIN, LOW);
+      blinkLEDs(CRGB::Green, 2000);
+      blinkLEDs(CRGB::DarkGray, 3000);
+    server.send(200, "text/plain", "OK");
   });
   server.on("/enable", [=]() {
     if (blockState = 0) {

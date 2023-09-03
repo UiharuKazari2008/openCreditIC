@@ -7,7 +7,7 @@ const fs = require("fs");
 let saveTimeout
 function saveDatabase() {
     try {
-        fs.writeFileSync("./cards.json", JSON.stringify(db));
+        fs.writeFileSync("./cards.json", JSON.stringify(db), null, 2);
     } catch (e) {
         console.error("Failed to save cards database", e)
     }
