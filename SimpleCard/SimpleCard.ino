@@ -8,6 +8,7 @@
 #define SS_PIN    21  // Define the SS pin (Slave Select) for the RFID module.
 #define RST_PIN   22 // Define the RST pin for the RFID module.
 #define RELAY_PIN 13 // Define the pin connected to the relay.
+#define BLOCK_PIN 14 // Define the pin connected to the LDR for Coin Blocking from cab
 #define LED_PIN   12 // Define the pin connected to the WS2812 LED strip.
 #define NUM_LEDS  1  // Define the number of LEDs in the strip.
 
@@ -18,6 +19,7 @@ const char *password = "Radio Noise AX";
 WebServer server(80);
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 int enableState = 0;
+int blockState = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -53,7 +55,7 @@ void setup() {
   });
   server.on("/status", [=]() {
     String assembledOutput = "";
-    assembledOutput += ((enableState == 0) ? "Disabled" : "Enabled");
+    assembledOutput += ((enableState == 0) ? "Disabled" : ((blockState == 1) ? "Blocked" : "Enabled"));
     server.send(200, "text/plain", assembledOutput);
   });
   
@@ -68,7 +70,23 @@ void setup() {
 }
 
 void loop() {
-  if (enableState == 1 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+  if (digitalRead(BLOCK_PIN) == HIGH) {
+    if (blockState == 0) {
+      blockState = 1;
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Magenta;
+      }
+      FastLED.show();
+    }
+  } else if (blockState == 1) {
+    blockState = 0;
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB::Yellow;
+    }
+    FastLED.show();
+  }
+
+  if (enableState == 1 && blockState == 0 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     // A new card is detected, read its UID.
     String uid = getUID();
     for (int i = 0; i < NUM_LEDS; i++) {
