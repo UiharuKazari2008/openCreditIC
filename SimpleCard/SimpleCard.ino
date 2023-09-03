@@ -123,7 +123,7 @@ void checkWiFiConnection() {
     }
     FastLED.show();
     Serial.println("WiFi not connected. Attempting to reconnect...");
-    WiFi.hostname("CabinetManager");
+    WiFi.hostname("SimpleCard");
     WiFi.disconnect(true);
     WiFi.begin(ssid, password);
     WiFi.setAutoReconnect(true);
