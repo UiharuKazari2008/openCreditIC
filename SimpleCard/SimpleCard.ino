@@ -124,12 +124,23 @@ void loop() {
       if (response == 200) {
         blinkLEDs(CRGB::Green, 2000);
       } else {
-        blinkLEDs(CRGB::Green, 1000);
-        blinkLEDs(CRGB::Orange, 500);
-        blinkLEDs(CRGB::Green, 1000);
-        blinkLEDs(CRGB::Orange, 500);
-        blinkLEDs(CRGB::Green, 1000);
+        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Green, 250);
       }
+    } else if (response == 400) {
+      Serial.println("Access denied! " + uid);
+        blinkLEDs(CRGB::Red, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Red, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Red, 250);
+        blinkLEDs(CRGB::Orange, 250);
+        blinkLEDs(CRGB::Red, 250);
     } else {
       Serial.println("Access denied! " + uid);
       blinkLEDs(CRGB::Red, 1500);
@@ -174,7 +185,7 @@ void checkWiFiConnection() {
     Serial.println(WiFi.localIP());
   }
 }
-bool sendRequest(String cardUID) {
+int sendRequest(String cardUID) {
   HTTPClient http;
   String url = String(apiUrl) + "dispense/" + cardUID;
   Serial.println("Sending GET request to: " + url);
