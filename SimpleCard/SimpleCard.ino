@@ -28,7 +28,7 @@ void setup() {
 
   SPI.begin(); // Initialize SPI communication.
   mfrc522.PCD_Init(); // Initialize the RFID module.
-  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
+  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_48dB);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS); // Initialize the LED strip.
 
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -74,7 +74,7 @@ void loop() {
     if (blockState == 0) {
       blockState = 1;
       for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Magenta;
+        leds[i] = CRGB::Black;
       }
       FastLED.show();
     }
