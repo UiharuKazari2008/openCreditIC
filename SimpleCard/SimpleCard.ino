@@ -20,6 +20,7 @@ WebServer server(80);
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 int enableState = 0;
 int blockState = 0;
+int blockOverride = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -37,11 +38,22 @@ void setup() {
   FastLED.show();
   checkWiFiConnection();
 
-  server.on("/enable", [=]() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Yellow;
+  server.on("/block_overide", [=]() {
+    if (blockOverride = 0) {
+      blockOverride = 1
+    } else {
+      blockOverride = 0
     }
-    FastLED.show();
+    enableState = 1;
+    server.send(200, "text/plain", (blockOverride) ? "Overided" : "Normal");
+  });
+  server.on("/enable", [=]() {
+    if (blockState = 0) {
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Yellow;
+      }
+      FastLED.show();
+    }
     enableState = 1;
     server.send(200, "text/plain", "OK");
   });
@@ -70,7 +82,7 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BLOCK_PIN) == HIGH) {
+  if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
     if (blockState == 0) {
       blockState = 1;
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -80,6 +92,7 @@ void loop() {
     }
   } else if (blockState == 1) {
     blockState = 0;
+    enableState = 1;
     for (int i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB::Yellow;
     }
@@ -92,17 +105,27 @@ void loop() {
     for (int i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB::Black;
     }
+    int response = sendRequest(uid);
     FastLED.show();
-    if (sendRequest(uid)) {
+    if (response >= 200 && response < 300) {
       Serial.println("Card OK, Dispense Credit");
       digitalWrite(RELAY_PIN, HIGH);
-      blinkLEDs(CRGB::Green, 100);
+      delay(100);
       digitalWrite(RELAY_PIN, LOW);
-      blinkLEDs(CRGB::Gray, 3000);
+      if (response == 200) {
+        blinkLEDs(CRGB::Green, 2000);
+      } else {
+        blinkLEDs(CRGB::Green, 1000);
+        blinkLEDs(CRGB::Orange, 500);
+        blinkLEDs(CRGB::Green, 1000);
+        blinkLEDs(CRGB::Orange, 500);
+        blinkLEDs(CRGB::Green, 1000);
+      }
     } else {
       Serial.println("Access denied! " + uid);
-      blinkLEDs(CRGB::Red, 500);
+      blinkLEDs(CRGB::Red, 1500);
     }
+    blinkLEDs(CRGB::DarkGray, 3000);
   }
   checkWiFiConnection();
   server.handleClient();
@@ -119,7 +142,7 @@ String getUID() {
 void checkWiFiConnection() {
   if (WiFi.status() != WL_CONNECTED) {
       for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Red;
+      leds[i] = CRGB::Magenta;
     }
     FastLED.show();
     Serial.println("WiFi not connected. Attempting to reconnect...");
@@ -150,7 +173,7 @@ bool sendRequest(String cardUID) {
   int httpCode = http.GET();
   http.end();
   Serial.println("HTTP Response code: " + String(httpCode));
-  return (httpCode == 200);
+  return httpCode;
 }
 void blinkLEDs(CRGB color, int duration) {
   for (int i = 0; i < NUM_LEDS; i++) {

@@ -28,7 +28,11 @@ app.get('/dispense/:card', (req, res) => {
                     db.users[db.cards[req.params.card].user] = user;
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(saveDatabase, 5000);
-                    res.status(200).send(user.credits.toString());
+                    if (user.credits > db.low_balance) {
+                        res.status(200).send(user.credits.toString());
+                    } else {
+                        res.status(201).send(user.credits.toString());
+                    }
                     console.log(`Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
                 } else {
                     res.status(400).end("DECLINED");

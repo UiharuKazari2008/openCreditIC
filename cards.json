@@ -1,1 +1,1 @@
-{"cost":1,"cards":{"E53F6AD":{"user":"kazari","locked":false},"D5C47262":{"user":"kazari","locked":false},"BD86F730":{"user":"guest","locked":false}},"users":{"kazari":{"credits":11},"guest":{"credits":100}}}
+{"cost":100,"low_balance": 500,"cards":{"E53F6AD":{"user":"kazari","locked":false},"D5C47262":{"user":"kazari","locked":false},"BD86F730":{"user":"guest","locked":false}},"users":{"kazari":{"credits":11},"guest":{"credits":100}}}
