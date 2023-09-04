@@ -309,7 +309,7 @@ app.get('/register/:user/:card', (req, res) => {
         try {
             if (db.users[req.params.user] === undefined) {
                 const user = {
-                    credits: req.query.balance || 0,
+                    credits: 0,
                     name: req.query.user_name || null,
                     contact: req.query.user_contact || null,
                     locked: false,
