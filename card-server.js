@@ -366,7 +366,7 @@ app.get('/reassign/:user/:card', (req, res) => {
     }
 });
 // Card Management
-app.get('/lock_card/:card', (req, res) => {
+app.get('/lock/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
@@ -386,7 +386,7 @@ app.get('/lock_card/:card', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/unlock_card/:card', (req, res) => {
+app.get('/unlock/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
@@ -407,7 +407,7 @@ app.get('/unlock_card/:card', (req, res) => {
     }
 });
 // User Management
-app.get('/lock_user/:user', (req, res) => {
+app.get('/lock/user/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
@@ -427,7 +427,7 @@ app.get('/lock_user/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/unlock_user/:user', (req, res) => {
+app.get('/unlock/user/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
@@ -448,7 +448,7 @@ app.get('/unlock_user/:user', (req, res) => {
     }
 });
 // Machine Management
-app.get('/set_machine_cost/:machine_id/:cost', (req, res) => {
+app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.machines[req.params.machine_id] === undefined) {
@@ -467,7 +467,7 @@ app.get('/set_machine_cost/:machine_id/:cost', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/set_machine_name/:machine_id/:name', (req, res) => {
+app.get('/set/machine/name/:machine_id/:name', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.machines[req.params.machine_id] === undefined) {
