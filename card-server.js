@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
     res.status(200).send("FastPay Server Beta");
 });
 // Should only be called by a cabinet
-app.get('/dispense/:machine_id/:card', (req, res) => {
+app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -114,7 +114,7 @@ app.get('/dispense/:machine_id/:card', (req, res) => {
     }
 });
 // Called by POS
-app.get('/topup_card/:card/:credits', (req, res) => {
+app.get('/deposit/card/:card/:credits', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -145,7 +145,7 @@ app.get('/topup_card/:card/:credits', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/topup/:user/:credits', (req, res) => {
+app.get('/deposit/user/:user/:credits', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
@@ -175,7 +175,7 @@ app.get('/topup/:user/:credits', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/card_balance/:card', (req, res) => {
+app.get('/get/wallet/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -194,7 +194,7 @@ app.get('/card_balance/:card', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/balance/:user', (req, res) => {
+app.get('/get/wallet/user/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
@@ -211,7 +211,7 @@ app.get('/balance/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/get/:user', (req, res) => {
+app.get('/get/user/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
@@ -233,7 +233,7 @@ app.get('/get/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/get_user/:card', (req, res) => {
+app.get('/get/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -256,7 +256,7 @@ app.get('/get_user/:card', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/get/users', (req, res) => {
+app.get('/get/user', (req, res) => {
     if (db.cards && db.users) {
         try {
             res.status(200).json(Object.entries(db.users).map(e => {
@@ -277,7 +277,7 @@ app.get('/get/users', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/get/cards', (req, res) => {
+app.get('/get/card', (req, res) => {
     if (db.cards && db.users) {
         try {
             res.status(200).json(db.cards);
@@ -289,7 +289,7 @@ app.get('/get/cards', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/history/cards', (req, res) => {
+app.get('/get/history/cards', (req, res) => {
     if (db.cards && db.users) {
         try {
             res.status(200).json(history.cards);
