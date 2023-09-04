@@ -11,6 +11,7 @@
 #define BLOCK_PIN 14 // Define the pin connected to the LDR for Coin Blocking from cab
 #define LED_PIN   12 // Define the pin connected to the WS2812 LED strip.
 #define NUM_LEDS  1  // Define the number of LEDs in the strip.
+#define BRIGHTNESS 255
 
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
@@ -35,6 +36,8 @@ void setup() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB::Black;
   }
+  FastLED.setBrightness(BRIGHTNESS);
+  FastLED.clear();
   FastLED.show();
   checkWiFiConnection();
 
@@ -45,23 +48,21 @@ void setup() {
       blockOverride = 0;
     }
     enableState = 1;
-    server.send(200, "text/plain", ((blockOverride == 1) ? "Overided" : "Normal"));
+    const char *line = "Set test mode: " + (blockOverride == 1) ? "Overided" : "Normal";
+    Serial.println(line);
+    server.send(200, "text/plain", line);
   });
   server.on("/credit", [=]() {
-    Serial.println("Card OK, Dispense Credit");
-      digitalWrite(RELAY_PIN, HIGH);
-      delay(100);
-      digitalWrite(RELAY_PIN, LOW);
+    Serial.println("Direct Inject, Dispense Credit");
+      handleDispenseCoin();
       blinkLEDs(CRGB::Green, 2000);
       blinkLEDs(CRGB::DarkGray, 3000);
+      setDefaultLEDState();
     server.send(200, "text/plain", "OK");
   });
   server.on("/enable", [=]() {
     if (blockState = 0) {
-      for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Yellow;
-      }
-      FastLED.show();
+      setDefaultLEDState();
     }
     enableState = 1;
     server.send(200, "text/plain", "OK");
@@ -81,34 +82,16 @@ void setup() {
   });
   
   server.begin();
-
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Yellow;
-  }
-  FastLED.show();
   enableState = 1;
   Serial.println("Ready to scan RFID cards...");
 }
 
 void loop() {
   if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-    if (blockState == 0) {
-      blockState = 1;
-      for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Black;
-      }
-      FastLED.show();
-    }
+    handleBlocked();
   } else if (blockState == 1) {
-    blockState = 0;
-    enableState = 1;
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Yellow;
-    }
-    FastLED.show();
-  }
-
-  if (enableState == 1 && blockState == 0 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    handleUnblocking();
+  } else if (enableState == 1 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     // A new card is detected, read its UID.
     String uid = getUID();
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -118,22 +101,24 @@ void loop() {
     FastLED.show();
     if (response >= 200 && response < 300) {
       Serial.println("Card OK, Dispense Credit");
-      digitalWrite(RELAY_PIN, HIGH);
-      delay(100);
-      digitalWrite(RELAY_PIN, LOW);
+      handleDispenseCoin();
       if (response == 200) {
-        blinkLEDs(CRGB::Green, 2000);
+        blinkLEDs(CRGB::Cyan, 2000);
+        blinkLEDs(CRGB::DarkSlateGray, 3000);
+        setDefaultLEDState();
       } else {
-        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Cyan, 250);
         blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Cyan, 250);
         blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Cyan, 250);
         blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Green, 250);
+        blinkLEDs(CRGB::Cyan, 250);
+        blinkLEDs(CRGB::DarkSlateGray, 3000);
+        setDefaultLEDState();
       }
     } else if (response == 400) {
-      Serial.println("Access denied! " + uid);
+      Serial.println("Card OK, No Avalible Balance! " + uid);
         blinkLEDs(CRGB::Red, 250);
         blinkLEDs(CRGB::Orange, 250);
         blinkLEDs(CRGB::Red, 250);
@@ -142,10 +127,9 @@ void loop() {
         blinkLEDs(CRGB::Orange, 250);
         blinkLEDs(CRGB::Red, 250);
     } else {
-      Serial.println("Access denied! " + uid);
+      Serial.println("Card Denied! " + uid);
       blinkLEDs(CRGB::Red, 1500);
     }
-    blinkLEDs(CRGB::DarkGray, 3000);
   }
   checkWiFiConnection();
   server.handleClient();
@@ -183,11 +167,13 @@ void checkWiFiConnection() {
     Serial.println("\nConnected to WiFi");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("MAC address: ");
+    Serial.println(WiFi.macAddress());
   }
 }
 int sendRequest(String cardUID) {
   HTTPClient http;
-  String url = String(apiUrl) + "dispense/" + cardUID;
+  String url = String(apiUrl) + "dispense/" + WiFi.macAddress() + "/" + cardUID;
   Serial.println("Sending GET request to: " + url);
   http.begin(url);
   int httpCode = http.GET();
@@ -195,12 +181,40 @@ int sendRequest(String cardUID) {
   Serial.println("HTTP Response code: " + String(httpCode));
   return httpCode;
 }
+
+void handleBlocked() {
+  if (blockState == 0) {
+    blockState = 1;
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB::Black;
+    }
+    FastLED.show();
+    Serial.println("Game has disabled card reader!");
+  }
+}
+void handleUnblocking() {
+  blockState = 0;
+  enableState = 1;
+  Serial.println("Game has enabled card reader!");
+  setDefaultLEDState();
+}
+void handleDispenseCoin() {
+  digitalWrite(RELAY_PIN, HIGH);
+  delay(100);
+  digitalWrite(RELAY_PIN, LOW);    
+}
 void blinkLEDs(CRGB color, int duration) {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = color;
   }
   FastLED.show();
   delay(duration);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Yellow;
+  }
+  FastLED.show();
+}
+void setDefaultLEDState() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB::Yellow;
   }

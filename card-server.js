@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
     res.status(200).send("READY");
 });
 // Should only be called by a cabinet
-app.get('/dispense/:card', (req, res) => {
+app.get('/dispense/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -33,14 +33,14 @@ app.get('/dispense/:card', (req, res) => {
                     } else {
                         res.status(201).send(user.credits.toString());
                     }
-                    console.log(`Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
+                    console.log(`${req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
                 } else {
                     res.status(400).end("DECLINED");
-                    console.log(`Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
+                    console.log(`${req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
                 res.status(404).end();
-                console.log(`Unknown Card: ${req.params.card}`)
+                console.log(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
