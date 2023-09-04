@@ -1,8 +1,22 @@
+const fs = require("fs");
 const express = require('express');
 const app = express();
 const port = 1777;
-let db = require('./cards.json')
-const fs = require("fs");
+if (!fs.existsSync('./cards.json')) {
+    fs.writeFileSync("./cards.json", JSON.stringify({
+        users: {},
+        cards: {},
+        machines: {}
+    }), null, 2);
+}
+let db = require('./cards.json');
+if (!fs.existsSync('./history.json')) {
+    fs.writeFileSync("./history.json", JSON.stringify({
+        dispense_log: {},
+        topup_log: {},
+    }), null, 2);
+}
+let history = require('./history.json');
 
 let saveTimeout
 function saveDatabase() {
@@ -11,21 +25,37 @@ function saveDatabase() {
     } catch (e) {
         console.error("Failed to save cards database", e)
     }
+    try {
+        fs.writeFileSync("./history.json", JSON.stringify(history), null, 2);
+    } catch (e) {
+        console.error("Failed to save history logs", e)
+    }
 }
 app.get('/', (req, res) => {
-    res.status(200).send("READY");
+    res.status(200).send("FastPay Server Beta");
 });
 // Should only be called by a cabinet
 app.get('/dispense/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
-                db.cards[req.params.card].locked === false &&
-                db.users[db.cards[req.params.card].user]) {
+                !db.cards[req.params.card].locked &&
+                db.users[db.cards[req.params.card].user] !== undefined &&
+                !db.users[db.cards[req.params.card].user].locked) {
                 let user = db.users[db.cards[req.params.card].user];
-                if ((user.credits - db.cost) >= 0) {
-                    user.credits = user.credits - db.cost
+                const machine = db.machines[req.params.machine_id] || {}
+                let cost = machine.cost || db.cost
+                if ((user.credits - cost) >= 0) {
+                    user.credits = user.credits - cost
                     db.users[db.cards[req.params.card].user] = user;
+                    if (!history.dispense_log[db.cards[req.params.card].user])
+                        history.dispense_log[db.cards[req.params.card].user] = [];
+                    history.dispense_log[db.cards[req.params.card].user].push({
+                        machine: req.params.machine_id,
+                        card: req.params.card,
+                        cost: cost,
+                        time: Date.now().valueOf()
+                    })
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
@@ -33,14 +63,14 @@ app.get('/dispense/:machine_id/:card', (req, res) => {
                     } else {
                         res.status(201).send(user.credits.toString());
                     }
-                    console.log(`${req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
+                    console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${cost})`)
                 } else {
                     res.status(400).end("DECLINED");
-                    console.log(`${req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
+                    console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
                 res.status(404).end();
-                console.log(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
+                console.error(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -59,13 +89,20 @@ app.get('/topup_card/:card/:credits', (req, res) => {
                 let user = db.users[db.cards[req.params.card].user];
                 user.credits = user.credits + parseFloat(req.params.credits);
                 db.users[db.cards[req.params.card].user] = user;
+                if (!history.topup_log[db.cards[req.params.card].user])
+                    history.topup_log[db.cards[req.params.card].user] = [];
+                history.topup_log[db.cards[req.params.card].user].push({
+                    card: req.params.card,
+                    cost: req.params.credits,
+                    time: Date.now().valueOf()
+                })
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 res.status(200).send(user.credits.toString());
-                console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
+                console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${req.params.credits})`)
             } else {
                 res.status(404).end();
-                console.log(`Unknown Card: ${req.params.card}`)
+                console.error(`Unknown Card: ${req.params.card}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -82,13 +119,20 @@ app.get('/topup/:user/:credits', (req, res) => {
                 let user = db.users[req.params.user];
                 user.credits = user.credits + parseFloat(req.params.credits);
                 db.users[req.params.user] = user;
+                if (!history.topup_log[req.params.user])
+                    history.topup_log[req.params.user] = [];
+                history.topup_log[req.params.user].push({
+                    card: false,
+                    cost: req.params.credits,
+                    time: Date.now().valueOf()
+                })
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 res.status(200).send(user.credits.toString());
-                console.log(`User TopUp: ${db.cards[req.params.card].user} : New Balance = ${user.credits}`)
+                console.log(`User TopUp: ${req.params.user} : New Balance = ${user.credits} (${req.params.credits})`)
             } else {
                 res.status(404).end();
-                console.log(`Unknown Card: ${req.params.user}`)
+                console.error(`Unknown Card: ${req.params.user}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -98,8 +142,7 @@ app.get('/topup/:user/:credits', (req, res) => {
         res.status(500).end();
     }
 });
-// Called by POS
-app.get('/balance_card/:card', (req, res) => {
+app.get('/card_balance/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
@@ -135,21 +178,19 @@ app.get('/balance/:user', (req, res) => {
         res.status(500).end();
     }
 });
-// Register new User
-app.get('/create/:user', (req, res) => {
+app.get('/get/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.users[req.params.user] === undefined) {
-                let user = {
-                    credits: 0
-                }
-                db.users[req.params.user] = user;
-                res.status(200).send("Registered");
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User Created: ${req.params.user}`)
+            if (db.users[req.params.user] !== undefined) {
+                let user = db.users[req.params.user];
+                res.status(200).json({
+                    ...user,
+                    cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === req.params.user),
+                    history:  history.dispense_log[req.params.user],
+                    topup_history:  history.topup_log[req.params.user],
+                });
             } else {
-                res.status(400);
+                res.status(404).end();
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -159,44 +200,78 @@ app.get('/create/:user', (req, res) => {
         res.status(500).end();
     }
 });
-// Register new card
-app.get('/create/:user/:card', (req, res) => {
+app.get('/get_user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.users[req.params.user] !== undefined &&
-                db.cards[req.params.card] === undefined) {
-                let card = {
-                    user: req.params.user,
-                    locked: false
-                }
-                db.cards[req.params.card] = card;
-                res.status(200).send("Registered Card");
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`New Card Created: ${req.params.card} for ${req.params.user}`)
+            if (db.cards[req.params.card] !== undefined &&
+                db.users[db.cards[req.params.card].user] !== undefined) {
+                let user = db.users[db.cards[req.params.card].user];
+                res.status(200).json({
+                    ...user,
+                    cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
+                    history:  history.dispense_log[db.cards[req.params.card].user],
+                    topup_history:  history.topup_log[db.cards[req.params.card].user],
+                });
             } else {
-                res.status(400);
+                res.status(404).end();
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+
+// Register new User
+app.get('/register/:user/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] === undefined) {
+                const user = {
+                    credits: req.query.balance || 0,
+                    name: req.query.user_name || null,
+                    contact: req.query.user_contact || null,
+                    locked: false,
+                    free_play: false,
+                }
+                db.users[req.params.user] = user;
+                console.log(`User Created: ${req.params.user}`, user)
+            }
+            if (db.users[req.params.user] !== undefined &&
+                db.cards[req.params.card] === undefined) {
+                let card = {
+                    user: req.params.user,
+                    name: req.query.card_name || null,
+                    contact: req.query.card_contact || null,
+                    locked: false
+                }
+                db.cards[req.params.card] = card;
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`New Card Created: ${req.params.card} for ${req.params.user}`, card)
+                res.status(200).send(`Registered Card ${req.params.card} for ${req.params.user}`);
+            } else {
+                console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
+                res.status(400).send("Card Already Exists!");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
         }
     } else {
         res.status(500).end();
     }
 });
 // Transfer user card
-app.get('/create/:user/:card', (req, res) => {
+app.get('/reassign/:user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined &&
                 db.cards[req.params.card] !== undefined) {
-                let card = {
-                    user: req.params.user,
-                    locked: false
-                }
-                db.cards[req.params.card] = card;
-                res.status(200).send("Moved Card");
+                db.cards[req.params.card].user = req.params.user;
+                res.status(200).send("Moved Card!");
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 console.log(`Card Moved: ${req.params.card} for ${req.params.user}`)
@@ -212,13 +287,11 @@ app.get('/create/:user/:card', (req, res) => {
     }
 });
 // Card Management
-app.get('/lock/:card', (req, res) => {
+app.get('/lock_card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
-                let card = db.cards[req.params.card]
-                card.locked = true;
-                db.cards[req.params.card] = card;
+                db.cards[req.params.card].locked = true;
                 res.status(200).send("Locked Card");
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
@@ -234,13 +307,11 @@ app.get('/lock/:card', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/unlock/:card', (req, res) => {
+app.get('/unlock_card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
-                let card = db.cards[req.params.card]
-                card.locked = false;
-                db.cards[req.params.card] = card;
+                db.cards[req.params.card].locked = false;
                 res.status(200).send("Unlocked Card");
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
@@ -248,6 +319,86 @@ app.get('/unlock/:card', (req, res) => {
             } else {
                 res.status(400);
             }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+// User Management
+app.get('/lock_user/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                db.users[req.params.user].locked = true;
+                res.status(200).send("User Locked");
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`User Locked: ${req.params.user}`)
+            } else {
+                res.status(400);
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/unlock_user/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                db.users[req.params.user].locked = false;
+                res.status(200).send("User Unlocked");
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`User Unlocked: ${req.params.user}`)
+            } else {
+                res.status(400);
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+// Machine Management
+app.get('/set_machine_cost/:machine_id/:cost', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].cost = parseFloat(req.params.cost)
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            console.log(`Machine ${req.params.machine_id} now costs ${req.params.cost}`)
+            res.status(200).send(`Machine ${req.params.machine_id} now costs ${req.params.cost}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set_machine_name/:machine_id/:name', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].name = req.params.name
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${req.params.machine_id} is named ${req.params.name}`);
+            console.log(`Machine ${req.params.machine_id} is named ${req.params.name}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
