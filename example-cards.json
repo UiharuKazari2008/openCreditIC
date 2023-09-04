@@ -1,0 +1,20 @@
+{
+  "cost": 1,
+  "low_balance": 5,
+  "credit_to_currency_rate": 10,
+  "cards": {
+    "test_card": {
+      "user": "guest",
+      "locked": false
+    }
+  },
+  "users": {
+    "guest": {
+      "credits": 30,
+      "locked": false
+    }
+  },
+  "machines": {
+    "test": {}
+  }
+}

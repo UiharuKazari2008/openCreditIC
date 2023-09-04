@@ -1,0 +1,45 @@
+{
+  "dispense_log": {
+    "guest": [
+      {
+        "machine": "test",
+        "card": "BD86F730",
+        "cost": 1,
+        "time": 1693796601735
+      },
+      {
+        "machine": "test",
+        "card": "BD86F730",
+        "cost": 1,
+        "time": 1693796608575
+      },
+      {
+        "machine": "test",
+        "card": "BD86F730",
+        "cost": 1,
+        "time": 1693796767775
+      },
+      {
+        "machine": "test",
+        "card": "BD86F730",
+        "cost": 1,
+        "time": 1693796795417
+      },
+      {
+        "machine": "test",
+        "card": "BD86F730",
+        "cost": 1,
+        "time": 1693796927565
+      }
+    ]
+  },
+  "topup_log": {
+    "guest": [
+      {
+        "card": "BD86F730",
+        "cost": "25",
+        "time": 1693796666756
+      }
+    ]
+  }
+}
