@@ -14,6 +14,7 @@ if (!fs.existsSync('./history.json')) {
     fs.writeFileSync("./history.json", JSON.stringify({
         dispense_log: {},
         topup_log: {},
+        cards: {}
     }), null, 2);
 }
 let history = require('./history.json');
@@ -54,6 +55,14 @@ app.get('/dispense/:machine_id/:card', (req, res) => {
                         machine: req.params.machine_id,
                         card: req.params.card,
                         cost: cost,
+                        status: true,
+                        time: Date.now().valueOf()
+                    })
+                    if (!history.cards[req.params.card])
+                        history.cards[req.params.card] = [];
+                    history.cards[req.params.card].push({
+                        machine: req.params.machine_id,
+                        authorised: true,
                         time: Date.now().valueOf()
                     })
                     clearTimeout(saveTimeout);
@@ -65,12 +74,36 @@ app.get('/dispense/:machine_id/:card', (req, res) => {
                     }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${cost})`)
                 } else {
+                    if (!history.dispense_log[db.cards[req.params.card].user])
+                        history.dispense_log[db.cards[req.params.card].user] = [];
+                    history.dispense_log[db.cards[req.params.card].user].push({
+                        machine: req.params.machine_id,
+                        card: req.params.card,
+                        cost: cost,
+                        status: false,
+                        time: Date.now().valueOf()
+                    })
+                    if (!history.cards[req.params.card])
+                        history.cards[req.params.card] = [];
+                    history.cards[req.params.card].push({
+                        machine: req.params.machine_id,
+                        authorised: true,
+                        time: Date.now().valueOf()
+                    })
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
                 res.status(404).end();
+                if (!history.cards[req.params.card])
+                    history.cards[req.params.card] = [];
+                history.cards[req.params.card].push({
+                    machine: req.params.machine_id,
+                    authorised: false,
+                    time: Date.now().valueOf()
+                })
                 console.error(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
+
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -223,6 +256,52 @@ app.get('/get_user/:card', (req, res) => {
         res.status(500).end();
     }
 });
+app.get('/get/users', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            res.status(200).json(Object.entries(db.users).map(e => {
+                const user = e[1];
+                const id = e[0];
+                return {
+                    ...user,
+                    cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === id),
+                    history:  history.dispense_log[id],
+                    topup_history:  history.topup_log[id],
+                }
+            }));
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/get/cards', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            res.status(200).json(db.cards);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/history/cards', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            res.status(200).json(history.cards);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+
 
 // Register new User
 app.get('/register/:user/:card', (req, res) => {
