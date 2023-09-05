@@ -38,7 +38,7 @@ function saveDatabase() {
 }
 function callVFD(machine, line1, line2) {
     request.get({
-        url: machine.vfd + `/alertBoth?header=${line1}&status=${line2}}`,
+        url: machine.vfd + `/alertBoth?header=${line1}&status=${line2}`,
     }, async function (err, res, body) {
         if (err) {
             console.error(err.message);
