@@ -1,7 +1,7 @@
 const fs = require("fs");
 const express = require('express');
 const app = express();
-const request = require('requests');
+const request = require('request').defaults({ encoding: null });
 const port = 1777;
 if (!fs.existsSync('./cards.json')) {
     fs.writeFileSync("./cards.json", JSON.stringify({

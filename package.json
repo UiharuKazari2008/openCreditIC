@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "dependencies": {
     "express": "^4.18.2",
-    "requests": "^0.3.0"
+    "request": "^2.88.2"
   }
 }
