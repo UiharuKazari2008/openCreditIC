@@ -53,12 +53,12 @@ app.get('/', (req, res) => {
 app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, res) => {
     if (db.cards && db.users) {
         try {
+            const machine = db.machines[req.params.machine_id] || {}
             if (db.cards[req.params.card] !== undefined &&
                 !db.cards[req.params.card].locked &&
                 db.users[db.cards[req.params.card].user] !== undefined &&
                 !db.users[db.cards[req.params.card].user].locked) {
                 let user = db.users[db.cards[req.params.card].user];
-                const machine = db.machines[req.params.machine_id] || {}
                 const cost = (() => {
                     if (machine && machine.free_play)
                         return [0, true]
@@ -93,12 +93,12 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`, (user.name) ? `Lets play ${user.name}!` : 'Lets play!')
+                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`, '[!] Low Balance!')
+                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`)
                         }
                         res.status(201).send(user.credits.toString());
                     }
@@ -122,13 +122,16 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         time: Date.now().valueOf()
                     })
                     if (machine && machine.vfd) {
-                        callVFD(machine, `Balance: ${user.credits}`, '[!] Not enough credits!')
+                        callVFD(machine, '** Not enough credits! **', `Balance: ${user.credits}`)
                     }
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
                 res.status(404).end();
+                if (machine && machine.vfd) {
+                    callVFD(machine, '** Invalid Card! **', `Please try again`)
+                }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = [];
                 history.cards[req.params.card].push({
