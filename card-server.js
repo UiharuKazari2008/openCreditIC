@@ -130,7 +130,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
             } else {
                 res.status(404).end();
                 if (machine && machine.vfd) {
-                    callVFD(machine, '** Invalid Card! **', `Please try again`)
+                    callVFD(machine, '** Invalid Card! **', `Try again`)
                 }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = [];
