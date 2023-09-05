@@ -1,6 +1,7 @@
 const fs = require("fs");
 const express = require('express');
 const app = express();
+const request = require('requests');
 const port = 1777;
 if (!fs.existsSync('./cards.json')) {
     fs.writeFileSync("./cards.json", JSON.stringify({
@@ -34,6 +35,16 @@ function saveDatabase() {
     } catch (e) {
         console.error("Failed to save history logs", e)
     }
+}
+function callVFD(machine, line1, line2) {
+    request.get({
+        url: machine.vfd + `/alertBoth?header=${line1}&status=${line2}}`,
+    }, async function (err, res, body) {
+        if (err) {
+            console.error(err.message);
+            console.error("FAULT Getting Response Data");
+        }
+    })
 }
 app.get('/', (req, res) => {
     res.status(200).send("FastPay Server Beta");
@@ -81,8 +92,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
+                        if (machine && machine.vfd) {
+                            callVFD(machine, (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`, (user.name) ? `Lets play ${user.name}!` : 'Lets play!')
+                        }
                         res.status(200).send(user.credits.toString());
                     } else {
+                        if (machine && machine.vfd) {
+                            callVFD(machine, (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`, '[!] Low Balance!')
+                        }
                         res.status(201).send(user.credits.toString());
                     }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
@@ -104,6 +121,9 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         authorised: true,
                         time: Date.now().valueOf()
                     })
+                    if (machine && machine.vfd) {
+                        callVFD(machine, `Balance: ${user.credits}`, '[!] Not enough credits!')
+                    }
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
@@ -550,6 +570,25 @@ app.get('/set/machine/name/:machine_id/:name', (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send(`Machine ${req.params.machine_id} is named ${req.params.name}`);
             console.log(`Machine ${req.params.machine_id} is named ${req.params.name}`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].vfd = `http://${req.params.ip_address}:${req.params.port}`
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${req.params.machine_id} now has a VFD enabled`);
+            console.log(`Machine ${req.params.machine_id} now has a VFD enabled`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
