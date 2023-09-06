@@ -1,7 +1,7 @@
-# SimpleCabRFID
-Simple Networked RFID Reader for arcade cabinets. Uses card serial number for ID and local server to manage cards and balances
+# openCreditPass / PayPass
+Cheap and DIY Networked RFID Reader for arcade cabinet credit payments. Uses card serial number for ID and local server to manage cards and balances
 
-I hold no responsibility if you use this in a buiness as its still very much beta code
+I hold no responsibility if you use this in a buiness as of the time of writing there is no encryption or authentication with the server/readers
 
 ## Features
 * Supports low cost ESP32 based RFID Card readers (See make a card reader section)
