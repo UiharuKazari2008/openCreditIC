@@ -93,7 +93,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$#l02:818F#$' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$$l02:818F;;' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
