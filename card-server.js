@@ -93,12 +93,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, ((db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.credit_to_currency_rate) ? '$$818F@$$' : 'Balance: '}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            //ゲームをしましょう
+                            callVFD(machine, ((db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE09579@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
                         if (machine && machine.vfd) {
-                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.credit_to_currency_rate) ? '$$818F@$$' : 'Balance: '}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            //カード残高が少ない
+                            callVFD(machine, (db.jpn) ? '** $$834A815A83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE09579@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).send(user.credits.toString());
                     }
@@ -122,7 +124,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         time: Date.now().valueOf()
                     }
                     if (machine && machine.vfd) {
-                        callVFD(machine, '** Not enough credits! **', `${(db.credit_to_currency_rate) ? '$$818F@$$' : 'Balance: '}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                        // お金が足りない
+                        callVFD(machine, (db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE09579@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
@@ -130,7 +133,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
             } else {
                 res.status(404).end();
                 if (machine && machine.vfd) {
-                    callVFD(machine, '** Invalid Card! **', `Try again`)
+                    // 無効なカード
+                    callVFD(machine, (db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', `Try again`)
                 }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = {};
