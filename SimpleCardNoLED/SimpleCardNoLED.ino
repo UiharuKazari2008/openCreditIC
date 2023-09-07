@@ -15,6 +15,7 @@ const char *password = "Radio Noise AX";
 WebServer server(80);
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 int enableState = 0;
+int testReader = 0;
 int blockState = 0;
 int blockOverride = 0;
 
@@ -29,16 +30,27 @@ void setup() {
 
   checkWiFiConnection();
 
-  server.on("/block_overide", [=]() {
+  server.on("/test/block", [=]() {
     if (blockOverride == 0) {
       blockOverride = 1;
     } else {
       blockOverride = 0;
     }
     enableState = 1;
-    const char *line = "Set test mode: " + (blockOverride == 1) ? "Overided" : "Normal";
-    Serial.println(line);
-    server.send(200, "text/plain", line);
+    Serial.print("Set coin blocker overide: ");
+    Serial.println((blockOverride == 1) ? "Overided" : "Normal");
+    server.send(200, "text/plain", (blockOverride == 1) ? "Overided Coin Enable" : "Normal Mode");
+  });
+  server.on("/test/reader", [=]() {
+    if (testReader == 0) {
+      testReader = 1;
+    } else {
+      testReader = 0;
+    }
+    enableState = 1;
+    Serial.print("Set test mode: ");
+    Serial.println((testReader == 1) ? "Overided" : "Normal");
+    server.send(200, "text/plain", (testReader == 1) ? "Reader Test Mode" : "Normal Mode");
   });
   server.on("/credit", [=]() {
     Serial.println("Direct Inject, Dispense Credit");
@@ -91,6 +103,7 @@ void loop() {
       delay(3000);
     } else {
       Serial.println("Card Denied! " + uid);
+      delay(3000);
     }
   }
   checkWiFiConnection();

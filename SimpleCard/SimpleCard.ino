@@ -20,6 +20,7 @@ const char *password = "Radio Noise AX";
 WebServer server(80);
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 int enableState = 0;
+int testReader = 0;
 int blockState = 0;
 int blockOverride = 0;
 
@@ -41,24 +42,27 @@ void setup() {
   FastLED.show();
   checkWiFiConnection();
 
-  server.on("/block_overide", [=]() {
+  server.on("/test/block", [=]() {
     if (blockOverride == 0) {
       blockOverride = 1;
     } else {
       blockOverride = 0;
     }
     enableState = 1;
-    const char *line = "Set test mode: " + (blockOverride == 1) ? "Overided" : "Normal";
-    Serial.println(line);
-    server.send(200, "text/plain", line);
+    Serial.print("Set coin blocker overide: ");
+    Serial.println((blockOverride == 1) ? "Overided" : "Normal");
+    server.send(200, "text/plain", (blockOverride == 1) ? "Overided Coin Enable" : "Normal Mode");
   });
-  server.on("/credit", [=]() {
-    Serial.println("Direct Inject, Dispense Credit");
-      handleDispenseCoin();
-      blinkLEDs(CRGB::Green, 2000);
-      blinkLEDs(CRGB::DarkGray, 3000);
-      setDefaultLEDState();
-    server.send(200, "text/plain", "OK");
+  server.on("/test/reader", [=]() {
+    if (testReader == 0) {
+      testReader = 1;
+    } else {
+      testReader = 0;
+    }
+    enableState = 1;
+    Serial.print("Set test mode: ");
+    Serial.println((testReader == 1) ? "Overided" : "Normal");
+    server.send(200, "text/plain", (testReader == 1) ? "Reader Test Mode" : "Normal Mode");
   });
   server.on("/enable", [=]() {
     if (blockState = 0) {
@@ -87,49 +91,69 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-    handleBlocked();
-  } else if (blockState == 1) {
-    handleUnblocking();
-  } else if (enableState == 1 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-    // A new card is detected, read its UID.
-    String uid = getUID();
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Black;
-    }
-    int response = sendRequest(uid);
-    FastLED.show();
-    if (response >= 200 && response < 300) {
-      Serial.println("Card OK, Dispense Credit");
-      handleDispenseCoin();
-      if (response == 200) {
-        blinkLEDs(CRGB::Cyan, 2000);
-        blinkLEDs(CRGB::DarkSlateGray, 3000);
-        setDefaultLEDState();
-      } else {
-        blinkLEDs(CRGB::Cyan, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Cyan, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Cyan, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Cyan, 250);
-        blinkLEDs(CRGB::DarkSlateGray, 3000);
-        setDefaultLEDState();
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    if (testReader == 1) {
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Green;
       }
-    } else if (response == 400) {
-      Serial.println("Card OK, No Avalible Balance! " + uid);
-        blinkLEDs(CRGB::Red, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Red, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Red, 250);
-        blinkLEDs(CRGB::Orange, 250);
-        blinkLEDs(CRGB::Red, 250);
-    } else {
-      Serial.println("Card Denied! " + uid);
-      blinkLEDs(CRGB::Red, 1500);
+      String uid = getUID();
+      Serial.println(uid);
+      } else {
+        for (int i = 0; i < NUM_LEDS; i++) {
+          leds[i] = CRGB::DarkRed;
+        }
+      }
+      FastLED.show();
+    } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
+      handleBlocked();
+    } else if (blockState == 1) {
+      handleUnblocking();
+    } else if (enableState == 1) {
+      // A new card is detected, read its UID.
+      String uid = getUID();
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Black;
+      }
+      FastLED.show();
+      int response = sendRequest(uid);
+      if (response >= 200 && response < 300) {
+        Serial.println("Card OK, Dispense Credit");
+        handleDispenseCoin();
+        if (response == 200) {
+          blinkLEDs(CRGB::Cyan, 2000);
+          blinkLEDs(CRGB::DarkSlateGray, 3000);
+          setDefaultLEDState();
+        } else {
+          blinkLEDs(CRGB::Cyan, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Cyan, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Cyan, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Cyan, 250);
+          blinkLEDs(CRGB::DarkSlateGray, 3000);
+          setDefaultLEDState();
+        }
+      } else if (response == 400) {
+        Serial.println("Card OK, No Avalible Balance! " + uid);
+          blinkLEDs(CRGB::Red, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Red, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Red, 250);
+          blinkLEDs(CRGB::Orange, 250);
+          blinkLEDs(CRGB::Red, 250);
+      } else {
+        Serial.println("Card Denied! " + uid);
+        blinkLEDs(CRGB::Red, 1500);
+      }
     }
+  } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
+    handleBlocked();
+    Serial.println("Game has blocked reader! " + uid);
+    blinkLEDs(CRGB::Red, 750);
+    blinkLEDs(CRGB::Black, 750);
+    blinkLEDs(CRGB::Red, 750);
   }
   checkWiFiConnection();
   server.handleClient();
@@ -195,6 +219,7 @@ void handleBlocked() {
 void handleUnblocking() {
   blockState = 0;
   enableState = 1;
+  blockOverride = 0;
   Serial.println("Game has enabled card reader!");
   setDefaultLEDState();
 }
