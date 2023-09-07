@@ -93,7 +93,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `${(db.credit_to_currency_rate) ? '$$818F@$$' : 'Balance: '}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, ((db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.credit_to_currency_rate) ? '$$818F@$$' : 'Balance: '}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
@@ -679,6 +679,22 @@ app.get('/set/arcade/freeplay/:value', (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send("Global free play is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
             console.log(`Global free_play is ${(req.params.value === "enable") ? "enabled" : "disabled"}`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/arcade/japanese/:value', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.jpn = (req.params.value === "enable");
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send("Global VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
+            console.log("Global VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"))
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
