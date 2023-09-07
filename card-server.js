@@ -83,22 +83,22 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         time: Date.now().valueOf()
                     })
                     if (!history.cards[req.params.card])
-                        history.cards[req.params.card] = [];
-                    history.cards[req.params.card].push({
+                        history.cards[req.params.card] = {};
+                    history.cards[req.params.card] = {
                         machine: req.params.machine_id,
                         authorised: true,
                         time: Date.now().valueOf()
-                    })
+                    }
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`)
+                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$#l02:818F#$' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
                         if (machine && machine.vfd) {
-                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `Balance: ${user.credits}`)
+                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$#l02:818F#$' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).send(user.credits.toString());
                     }
@@ -115,14 +115,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         time: Date.now().valueOf()
                     })
                     if (!history.cards[req.params.card])
-                        history.cards[req.params.card] = [];
-                    history.cards[req.params.card].push({
+                        history.cards[req.params.card] = {};
+                    history.cards[req.params.card] = {
                         machine: req.params.machine_id,
                         authorised: true,
                         time: Date.now().valueOf()
-                    })
+                    }
                     if (machine && machine.vfd) {
-                        callVFD(machine, '** Not enough credits! **', `Balance: ${user.credits}`)
+                        callVFD(machine, '** Not enough credits! **', `Balance: ${(db.credit_to_currency_rate) ? '$#l02:818F#$' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
@@ -133,12 +133,12 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     callVFD(machine, '** Invalid Card! **', `Try again`)
                 }
                 if (!history.cards[req.params.card])
-                    history.cards[req.params.card] = [];
-                history.cards[req.params.card].push({
+                    history.cards[req.params.card] = {};
+                history.cards[req.params.card] ={
                     machine: req.params.machine_id,
                     authorised: false,
                     time: Date.now().valueOf()
-                })
+                }
                 console.error(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
 
             }
@@ -380,7 +380,6 @@ app.get('/register/:user/:card', (req, res) => {
         res.status(500).end();
     }
 });
-// Transfer user card
 app.get('/reassign/:user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -403,15 +402,15 @@ app.get('/reassign/:user/:card', (req, res) => {
     }
 });
 // Card Management
-app.get('/lock/card/:card', (req, res) => {
+app.get('/set/card/lock/:card/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
                 db.cards[req.params.card].locked = true;
-                res.status(200).send("Locked Card");
+                res.status(200).send("Card is " + ((req.params.value === "enable") ? "locked: " : "unlocked: ") + req.params.card);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`Card Locked: ${req.params.card}`)
+                console.log("Card is " + ((req.params.value === "enable") ? "locked: " : "unlocked: ") + req.params.card)
             } else {
                 res.status(400);
             }
@@ -423,15 +422,16 @@ app.get('/lock/card/:card', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/unlock/card/:card', (req, res) => {
+app.get('/revoke/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
-                db.cards[req.params.card].locked = false;
-                res.status(200).send("Unlocked Card");
+                db.cards[req.params.card] = null;
+                delete db.cards[req.params.card];
+                res.status(200).send("Card revoked: " + req.params.card);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`Card Unlocked: ${req.params.card}`)
+                console.log("Card revoked: " + req.params.card)
             } else {
                 res.status(400);
             }
@@ -444,15 +444,15 @@ app.get('/unlock/card/:card', (req, res) => {
     }
 });
 // User Management
-app.get('/lock/user/:user', (req, res) => {
+app.get('/set/user/lock/:user/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
-                db.users[req.params.user].locked = true;
-                res.status(200).send("User Locked");
+                db.users[req.params.user].locked = (req.params.value === "enable");
+                res.status(200).send("User is " + ((req.params.value === "enable") ? "locked: " : "unlocked: ") + req.params.user);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User Locked: ${req.params.user}`)
+                console.log(("User is " + (req.params.value === "enable") ? "locked: " : "unlocked: ") + req.params.user)
             } else {
                 res.status(400);
             }
@@ -464,15 +464,15 @@ app.get('/lock/user/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/unlock/user/:user', (req, res) => {
+app.get('/set/user/freeplay/user/:user/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
-                db.users[req.params.user].locked = false;
-                res.status(200).send("User Unlocked");
+                db.users[req.params.user].free_play = (req.params.value === "enable");
+                res.status(200).send(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.user);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User Unlocked: ${req.params.user}`)
+                console.log(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.user)
             } else {
                 res.status(400);
             }
@@ -484,47 +484,7 @@ app.get('/unlock/user/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/enable_freeplay/user/:user', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            if (db.users[req.params.user] !== undefined) {
-                db.users[req.params.user].free_play = true;
-                res.status(200).send("User is in Freeplay");
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User is in Freeplay: ${req.params.user}`)
-            } else {
-                res.status(400);
-            }
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).end();
-        }
-    } else {
-        res.status(500).end();
-    }
-});
-app.get('/disable_freeplay/user/:user', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            if (db.users[req.params.user] !== undefined) {
-                db.users[req.params.user].free_play = false;
-                res.status(200).send("User is in credit mode");
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User is in credit mode: ${req.params.user}`)
-            } else {
-                res.status(400);
-            }
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).end();
-        }
-    } else {
-        res.status(500).end();
-    }
-});
-app.get('/disable_freeplay/all', (req, res) => {
+app.get('/disable_freeplay/user', (req, res) => {
     if (db.cards && db.users) {
         try {
             Object.keys(db.users).map(user => {
@@ -537,6 +497,28 @@ app.get('/disable_freeplay/all', (req, res) => {
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/revoke/:user/', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                db.users[req.params.user] = null;
+                delete db.users[req.params.user];
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`User Revoked: ${req.params.user}`)
+                res.status(200).send(`User Revoked: ${req.params.user}`);
+            } else {
+                console.error(`User not found: ${req.params.user}`)
+                res.status(400).send("Card Already Exists!");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
         }
     } else {
         res.status(500).end();
@@ -600,17 +582,17 @@ app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/enable_freeplay/machine/:machine_id', (req, res) => {
+app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.machines[req.params.machine_id] === undefined) {
                 db.machines[req.params.machine_id] = {};
             }
-            db.machines[req.params.machine_id].free_play = true
+            db.machines[req.params.machine_id].free_play = (req.params.value === "enable");
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} is in free_play`);
-            console.log(`Machine ${req.params.machine_id} is in free_play`)
+            res.status(200).send(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id);
+            console.log(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -619,17 +601,15 @@ app.get('/enable_freeplay/machine/:machine_id', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/disable_freeplay/machine/:machine_id', (req, res) => {
+app.get('/revoke/machine/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
-            }
-            db.machines[req.params.machine_id].free_play = false
+            db.machines[req.params.machine_id] = null;
+            delete db.machines[req.params.machine_id];
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} is in credit mode`);
-            console.log(`Machine ${req.params.machine_id} is in credit mode`)
+            res.status(200).send("Machine deleted: " + req.params.machine_id);
+            console.log("Machine deleted: " + req.params.machine_id);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -639,14 +619,14 @@ app.get('/disable_freeplay/machine/:machine_id', (req, res) => {
     }
 });
 // Arcade Management
-app.get('/enable_freeplay/global', (req, res) => {
+app.get('/set/arcade/cost/:cost', (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.free_play = true;
+            db.cost = parseFloat(req.params.cost)
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Global free_play`);
-            console.log(`Global free_play`)
+            console.log(`Arcade global costs is ${req.params.cost}`)
+            res.status(200).send(`Arcade global costs is ${req.params.cost}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -655,14 +635,50 @@ app.get('/enable_freeplay/global', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/disable_freeplay/global', (req, res) => {
+app.get('/set/arcade/low_balance/:balance', (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.free_play = false;
+            db.low_balance = parseFloat(req.params.balance)
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Global credit mode`);
-            console.log(`Global credit mode`)
+            console.log(`Arcade low credits warning value is ${req.params.balance}`)
+            res.status(200).send(`Arcade low credits warning value is ${req.params.balance}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/arcade/currency/:multiplyer', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (req.params.multiplyer === "null") {
+                db.credit_to_currency_rate = undefined
+            } else {
+                db.credit_to_currency_rate = parseFloat(req.params.multiplyer)
+            }
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            console.log(`Arcade currency multiplayer is 1 Credit to ${req.params.multiplyer}`)
+            res.status(200).send(`Arcade currency multiplayer is 1 Credit to ${req.params.multiplyer}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/arcade/freeplay/:value', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.free_play = (req.params.value === "enable");;
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send("Global free play is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
+            console.log(`Global free_play is ${(req.params.value === "enable") ? "enabled" : "disabled"}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -673,5 +689,5 @@ app.get('/disable_freeplay/global', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Card server is running on http://0.0.0.0:${port}`);
 });
