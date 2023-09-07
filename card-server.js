@@ -134,7 +134,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                 res.status(404).end();
                 if (machine && machine.vfd) {
                     // 無効なカード
-                    callVFD(machine, (db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', `Try again`)
+                    callVFD(machine, (db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', req.params.card)
                 }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = {};
