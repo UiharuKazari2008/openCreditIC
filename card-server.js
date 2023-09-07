@@ -93,12 +93,12 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
-                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$$818F;;' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, (user.name) ? `Lets play ${user.name}!` : 'Lets play!', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$$818F@' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).send(user.credits.toString());
                     } else {
                         if (machine && machine.vfd) {
-                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$$818F;;' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, '** Low Balance! **', (cost[1]) ? 'Free Play' : `Balance: ${(db.credit_to_currency_rate) ? '$$818F@' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).send(user.credits.toString());
                     }
@@ -122,7 +122,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         time: Date.now().valueOf()
                     }
                     if (machine && machine.vfd) {
-                        callVFD(machine, '** Not enough credits! **', `Balance: ${(db.credit_to_currency_rate) ? '$$818F;;' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                        callVFD(machine, '** Not enough credits! **', `Balance: ${(db.credit_to_currency_rate) ? '$$818F@' : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(400).end("DECLINED");
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
