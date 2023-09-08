@@ -96,13 +96,29 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             //ゲームをしましょう
                             callVFD(machine, ((db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
-                        res.status(200).send(user.credits.toString());
+                        res.status(200).json({
+                            user_name: user.user,
+                            cost: cost[0],
+                            balance: user.credits,
+                            free_play: user.free_play || cost[1],
+                            status: true,
+                            currency_mode: !!(db.credit_to_currency_rate),
+                            currency_rate: db.credit_to_currency_rate
+                        });
                     } else {
                         if (machine && machine.vfd) {
                             //カード残高が少ない
                             callVFD(machine, (db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
-                        res.status(201).send(user.credits.toString());
+                        res.status(201).json({
+                            user_name: user.user,
+                            cost: cost[0],
+                            balance: user.credits,
+                            free_play: user.free_play || cost[1],
+                            status: true,
+                            currency_mode: !!(db.credit_to_currency_rate),
+                            currency_rate: db.credit_to_currency_rate
+                        });
                     }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
                 } else {
@@ -127,7 +143,15 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         // お金が足りない
                         callVFD(machine, (db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
-                    res.status(400).end("DECLINED");
+                    res.status(400).end({
+                        user_name: user.user,
+                        cost: cost[0],
+                        balance: user.credits,
+                        free_play: user.free_play || cost[1],
+                        status: false,
+                        currency_mode: !!(db.credit_to_currency_rate),
+                        currency_rate: db.credit_to_currency_rate
+                    });
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
