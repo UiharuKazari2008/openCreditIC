@@ -143,7 +143,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         // お金が足りない
                         callVFD(machine, (db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
-                    res.status(400).end({
+                    res.status(400).json({
                         user_name: user.user,
                         cost: cost[0],
                         balance: user.credits,
