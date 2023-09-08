@@ -103,7 +103,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             free_play: user.free_play || cost[1],
                             status: true,
                             currency_mode: !!(db.credit_to_currency_rate),
-                            currency_rate: db.credit_to_currency_rate
+                            currency_rate: db.credit_to_currency_rate,
+                            japanese: !!(db.jpn)
                         });
                     } else {
                         if (machine && machine.vfd) {
@@ -117,7 +118,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             free_play: user.free_play || cost[1],
                             status: true,
                             currency_mode: !!(db.credit_to_currency_rate),
-                            currency_rate: db.credit_to_currency_rate
+                            currency_rate: db.credit_to_currency_rate,
+                            japanese: !!(db.jpn)
                         });
                     }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
@@ -150,7 +152,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         free_play: user.free_play || cost[1],
                         status: false,
                         currency_mode: !!(db.credit_to_currency_rate),
-                        currency_rate: db.credit_to_currency_rate
+                        currency_rate: db.credit_to_currency_rate,
+                        japanese: !!(db.jpn)
                     });
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
