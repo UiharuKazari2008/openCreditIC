@@ -492,7 +492,7 @@ app.get('/set/user/lock/:user/:value', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/set/user/freeplay/user/:user/:value', (req, res) => {
+app.get('/set/user/freeplay/:user/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
