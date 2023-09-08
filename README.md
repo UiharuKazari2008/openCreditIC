@@ -1,5 +1,5 @@
-# openCreditPass / PayPass
-Cheap and DIY Networked RFID Reader for arcade cabinet credit payments. Uses card serial number for ID and local server to manage cards and balances
+# openCreditIC / PayPass
+Cheap Networked RFID Reader(s) and cloud-free server for arcade cabinet credit payments. Uses card serial number for ID and local server to manage cards and balances
 
 I hold no responsibility if you use this in a buiness as of the time of writing there is no encryption or authentication with the server/readers
 
