@@ -93,11 +93,11 @@ void setup() {
 void loop() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     if (testReader == 1) {
-      for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Green;
-      }
-      String uid = getUID();
-      Serial.println(uid);
+        for (int i = 0; i < NUM_LEDS; i++) {
+          leds[i] = CRGB::Green;
+        }
+        String uid = getUID();
+        Serial.println(uid);
       } else {
         for (int i = 0; i < NUM_LEDS; i++) {
           leds[i] = CRGB::DarkRed;

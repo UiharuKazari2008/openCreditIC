@@ -94,7 +94,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
                             //ゲームをしましょう
-                            callVFD(machine, ((db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, (((machine && machine.jpn) || db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).json({
                             user_name: user.user,
@@ -104,12 +104,12 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             status: true,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
-                            japanese: !!(db.jpn)
+                            japanese: !!((machine && machine.jpn) || db.jpn)
                         });
                     } else {
                         if (machine && machine.vfd) {
                             //カード残高が少ない
-                            callVFD(machine, (db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).json({
                             user_name: user.user,
@@ -119,7 +119,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             status: true,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
-                            japanese: !!(db.jpn)
+                            japanese: !!((machine && machine.jpn) || db.jpn)
                         });
                     }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
@@ -143,7 +143,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     }
                     if (machine && machine.vfd) {
                         // お金が足りない
-                        callVFD(machine, (db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                        callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(400).json({
                         user_name: user.user,
@@ -153,7 +153,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         status: false,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
-                        japanese: !!(db.jpn)
+                        japanese: !!((machine && machine.jpn) || db.jpn)
                     });
                     console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
@@ -161,7 +161,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                 res.status(404).end();
                 if (machine && machine.vfd) {
                     // 無効なカード
-                    callVFD(machine, (db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', req.params.card)
+                    callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', req.params.card)
                 }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = {};
@@ -624,6 +624,25 @@ app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id);
             console.log(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].jpn = (req.params.value === "enable");
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send("Machine VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
+            console.log("Machine VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"))
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
