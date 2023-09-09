@@ -613,6 +613,25 @@ app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
         res.status(500).end();
     }
 });
+app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].button_callback = decodeURIComponent(req.params.api_endpoint)
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`);
+            console.log(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
 app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
