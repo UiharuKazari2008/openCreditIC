@@ -98,7 +98,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             callVFD(machine, (((machine && machine.jpn) || db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).json({
-                            user_name: user.user,
+                            user_name: user.name,
                             cost: cost[0],
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
@@ -113,7 +113,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).json({
-                            user_name: user.user,
+                            user_name: user.name,
                             cost: cost[0],
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
@@ -147,7 +147,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$82A88BE082AA91AB82E882C882A2@$$! **' : '** Not enough credits! **', `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(400).json({
-                        user_name: user.user,
+                        user_name: user.name,
                         cost: cost[0],
                         balance: user.credits,
                         free_play: user.free_play || cost[1],
@@ -411,7 +411,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             clearTimeout(saveTimeout);
                             saveTimeout = setTimeout(saveDatabase, 5000);
                             res.status(200).json({
-                                user_name: user.user,
+                                user_name: user.name,
                                 cost: 0,
                                 balance: user.credits,
                                 free_play: false,
@@ -445,6 +445,35 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                         } else {
                             console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                             res.status(400).send("Card Already Exists!");
+                        }
+                        break;
+                    case 'freeplay_card':
+                        if (db.cards[req.params.card] !== undefined &&
+                            db.users[db.cards[req.params.card].user]) {
+                            db.users[db.cards[req.params.card].user].free_play = true;
+                            if (!history.topup_log[db.cards[req.params.card].user])
+                                history.topup_log[db.cards[req.params.card].user] = [];
+                            history.topup_log[db.cards[req.params.card].user].push({
+                                card: req.params.card,
+                                cost: pendingScan.data.value,
+                                time: Date.now().valueOf()
+                            })
+                            clearTimeout(saveTimeout);
+                            saveTimeout = setTimeout(saveDatabase, 5000);
+                            res.status(200).json({
+                                user_name: db.users[db.cards[req.params.card].user].name,
+                                cost: 0,
+                                balance: db.users[db.cards[req.params.card].user].credits,
+                                free_play: true,
+                                status: true,
+                                currency_mode: !!(db.credit_to_currency_rate),
+                                currency_rate: db.credit_to_currency_rate,
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                            console.log("User is in Freeplay: " + db.cards[req.params.card].user)
+                        } else {
+                            res.status(404).end();
+                            console.error(`Unknown Card: ${req.params.card}`)
                         }
                         break;
                     default:
@@ -664,6 +693,25 @@ app.get('/set/user/freeplay/:user/:value', (req, res) => {
             } else {
                 res.status(400);
             }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/scan/freeplay', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "freeplay_card",
+                data: {
+                    time: null
+                }
+            }
+            res.status(200).send(`Waiting for card to be scanned to enable freeplay`);
+            console.log(`Pending Card Freeplay`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
