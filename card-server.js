@@ -447,6 +447,36 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(400).send("Card Already Exists!");
                         }
                         break;
+                    case 'delete_user':
+                        if (db.cards[req.params.card] !== undefined) {
+                            const user = db.cards[req.params.card].user;
+                            delete db.users[user];
+                            db.cards = db.cards.filter(c => c.user !== user);
+                            clearTimeout(saveTimeout);
+                            saveTimeout = setTimeout(saveDatabase, 5000);
+                            console.log(`User Deleted: ${req.params.card}`)
+                            res.status(440).json({
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                        } else {
+                            console.error(`Card Unknown: ${req.params.card}`)
+                            res.status(404).send("Unregistered Card!");
+                        }
+                        break;
+                    case 'delete_card':
+                        if (db.cards[req.params.card] !== undefined) {
+                            delete db.cards[req.params.card];
+                            clearTimeout(saveTimeout);
+                            saveTimeout = setTimeout(saveDatabase, 5000);
+                            console.log(`Card Deleted: ${req.params.card}`)
+                            res.status(440).json({
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                        } else {
+                            console.error(`Card Unknown: ${req.params.card}`)
+                            res.status(404).send("Unregistered Card!");
+                        }
+                        break;
                     case 'freeplay_card':
                         if (db.cards[req.params.card] !== undefined &&
                             db.users[db.cards[req.params.card].user]) {
@@ -531,13 +561,18 @@ app.get('/callback/:machine_id/:card', (req, res) => {
         res.status(500).end();
     }
 })
+app.get('/cancel_pending', (req, res) => {
+    console.log("Cancelling pending");
+    pendingScan = null;
+    res.status(200).send("No pending scan requests");
+})
 // Register new User
 app.get('/register/scan', (req, res) => {
     if (db.cards && db.users) {
         try {
             const userId = `user-${(Date.now()).valueOf()}`
             const user = {
-                credits: 0,
+                credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
                 name: req.query.user_name || null,
                 contact: req.query.user_contact || null,
                 locked: false,
@@ -569,7 +604,7 @@ app.get('/register/scan/:user', (req, res) => {
         try {
             if (db.users[req.params.user] === undefined) {
                 const user = {
-                    credits: 0,
+                    credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
                     name: req.query.user_name || null,
                     contact: req.query.user_contact || null,
                     locked: false,
@@ -577,6 +612,15 @@ app.get('/register/scan/:user', (req, res) => {
                 }
                 db.users[req.params.user] = user;
                 console.log(`User Created: ${req.params.user}`, user)
+            } else if (req.query.credits && !isNaN(parseFloat(req.query.credits))) {
+                db.users[req.params.user].credits = db.users[req.params.user].credits + parseFloat(req.query.credits);
+                if (!history.topup_log[req.params.user])
+                    history.topup_log[req.params.user] = [];
+                history.topup_log[req.params.user].push({
+                    card: false,
+                    cost: req.query.credits,
+                    time: Date.now().valueOf()
+                })
             }
             pendingScan = {
                 command: "register_new_card",
@@ -602,7 +646,7 @@ app.get('/register/new/:user/:card', (req, res) => {
         try {
             if (db.users[req.params.user] === undefined) {
                 const user = {
-                    credits: 0,
+                    credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
                     name: req.query.user_name || null,
                     contact: req.query.user_contact || null,
                     locked: false,
@@ -610,6 +654,15 @@ app.get('/register/new/:user/:card', (req, res) => {
                 }
                 db.users[req.params.user] = user;
                 console.log(`User Created: ${req.params.user}`, user)
+            } else if (req.query.credits && !isNaN(parseFloat(req.query.credits))) {
+                db.users[req.params.user].credits = db.users[req.params.user].credits + parseFloat(req.query.credits);
+                if (!history.topup_log[req.params.user])
+                    history.topup_log[req.params.user] = [];
+                history.topup_log[req.params.user].push({
+                    card: false,
+                    cost: req.query.credits,
+                    time: Date.now().valueOf()
+                })
             }
             if (db.users[req.params.user] !== undefined &&
                 db.cards[req.params.card] === undefined) {
@@ -628,6 +681,85 @@ app.get('/register/new/:user/:card', (req, res) => {
                 console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                 res.status(400).send("Card Already Exists!");
             }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/user/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                delete db.users[req.params.user];
+                db.cards = db.cards.filter(c => c.user !== req.params.user);
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                res.status(200).send(`User Deleted ${req.params.user}`);
+            } else {
+                console.error(`User does not exists: ${req.params.user}`)
+                res.status(404).send("User does not exists!");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/card/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.cards[req.params.card] !== undefined) {
+                delete db.cards[req.params.user];
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                res.status(200).send(`Card Deleted ${req.params.card}`);
+            } else {
+                console.error(`Card does not exists: ${req.params.card}`)
+                res.status(404).send("Card does not exists!");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/scan/user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "delete_user",
+                data: {
+
+                }
+            }
+            console.log(`New Pending Account Deletion`)
+            res.status(200).send(`Waiting for card to be scanned for user delete operation`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/scan/card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "delete_card",
+                data: {
+
+                }
+            }
+            console.log(`New Pending Card Deletion`)
+            res.status(200).send(`Waiting for card to be scanned for card delete operation`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send("Internal System Error");
