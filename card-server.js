@@ -22,6 +22,7 @@ if (!fs.existsSync('./history.json')) {
     }), null, 2);
 }
 let history = require('./history.json');
+let pendingScan = null;
 
 let saveTimeout
 function saveDatabase() {
@@ -182,6 +183,25 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
     }
 });
 // Called by POS
+app.get('/deposit/scan/:credits', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "deposit_card",
+                data: {
+                    value: parseFloat(req.params.credits)
+                }
+            }
+            res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
+            console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
 app.get('/deposit/card/:card/:credits', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -369,10 +389,147 @@ app.get('/get/history/cards', (req, res) => {
         res.status(500).end();
     }
 });
-
-
+app.get('/callback/:machine_id/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            const machine = db.machines[req.params.machine_id] || {}
+            if (pendingScan && pendingScan.command) {
+                switch (pendingScan.command) {
+                    case 'deposit_card':
+                        if (db.cards[req.params.card] !== undefined &&
+                            db.users[db.cards[req.params.card].user]) {
+                            let user = db.users[db.cards[req.params.card].user];
+                            user.credits = user.credits + parseFloat(pendingScan.data.value);
+                            db.users[db.cards[req.params.card].user] = user;
+                            if (!history.topup_log[db.cards[req.params.card].user])
+                                history.topup_log[db.cards[req.params.card].user] = [];
+                            history.topup_log[db.cards[req.params.card].user].push({
+                                card: req.params.card,
+                                cost: pendingScan.data.value,
+                                time: Date.now().valueOf()
+                            })
+                            clearTimeout(saveTimeout);
+                            saveTimeout = setTimeout(saveDatabase, 5000);
+                            res.status(200).json({
+                                user_name: user.user,
+                                cost: 0,
+                                balance: user.credits,
+                                free_play: false,
+                                status: true,
+                                currency_mode: !!(db.credit_to_currency_rate),
+                                currency_rate: db.credit_to_currency_rate,
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                            console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${pendingScan.data.value})`)
+                        } else {
+                            res.status(404).end();
+                            console.error(`Unknown Card: ${req.params.card}`)
+                        }
+                        break;
+                    case 'register_new_card':
+                        if (db.users[pendingScan.data.user] !== undefined &&
+                            db.cards[req.params.card] === undefined) {
+                            let card = {
+                                user: pendingScan.data.user,
+                                name: pendingScan.data.name || null,
+                                contact: pendingScan.data.contact || null,
+                                locked: false
+                            }
+                            db.cards[req.params.card] = card;
+                            clearTimeout(saveTimeout);
+                            saveTimeout = setTimeout(saveDatabase, 5000);
+                            console.log(`New Card Created: ${req.params.card} for ${pendingScan.data.user}`, card)
+                            res.status(210).json({
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                        } else {
+                            console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
+                            res.status(400).send("Card Already Exists!");
+                        }
+                        break;
+                    default:
+                        res.status(500).send("Unknown Server Command");
+                        break;
+                }
+                pendingScan = null;
+            } else {
+                res.status(410).send("Unknown Server Command");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+})
 // Register new User
-app.get('/register/:user/:card', (req, res) => {
+app.get('/register/scan', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            const userId = `user-${(Date.now()).valueOf()}`
+            const user = {
+                credits: 0,
+                name: req.query.user_name || null,
+                contact: req.query.user_contact || null,
+                locked: false,
+                free_play: false,
+            }
+            db.users[userId] = user;
+            console.log(`User Created: ${userId}`, user)
+            pendingScan = {
+                command: "register_new_card",
+                data: {
+                    user: userId,
+                    name: req.query.card_name || null,
+                    contact: req.query.card_contact || null,
+                    locked: false
+                }
+            }
+            console.log(`New Pending Card for ${userId}`, pendingScan)
+            res.status(200).send(`Waiting for card to be scanned for ${userId}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/register/scan/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] === undefined) {
+                const user = {
+                    credits: 0,
+                    name: req.query.user_name || null,
+                    contact: req.query.user_contact || null,
+                    locked: false,
+                    free_play: false,
+                }
+                db.users[req.params.user] = user;
+                console.log(`User Created: ${req.params.user}`, user)
+            }
+            pendingScan = {
+                command: "register_new_card",
+                data: {
+                    user: req.params.user,
+                    name: req.query.card_name || null,
+                    contact: req.query.card_contact || null,
+                    locked: false
+                }
+            }
+            console.log(`New Pending Card for ${req.params.user}`, pendingScan)
+            res.status(200).send(`Waiting for card to be scanned for ${req.params.user}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/register/new/:user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] === undefined) {
