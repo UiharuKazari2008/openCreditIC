@@ -74,31 +74,28 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user];
                         if (dispense_log.length <= machine.antihog_trigger)
                             return false;
-                        const last_tap = dispense_log[dispense_log.length - 1].time;
                         const cooldown_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
-                        const timeDifference = last_tap - cooldown_target;
+                        const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Machine Antihog times : ${machine.antihog_trigger}x${machine.antihog_min}m - ${timeDifference * 60000}m`)
-                        return timeDifference <= (60000 * machine.antihog_min);
+                        return timeDifference >= (60000 * machine.antihog_min);
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.antihog_trigger && db.antihog_min) {
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user];
                         if (dispense_log.length <= db.antihog_trigger)
                             return false;
-                        const last_tap = dispense_log[dispense_log.length - 1].time;
                         const cooldown_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
-                        const timeDifference = last_tap - cooldown_target;
+                        const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Global Antihog times : ${db.antihog_trigger}x${db.antihog_min}m - ${timeDifference * 60000}m`)
-                        return timeDifference <= (60000 * db.antihog_min);
+                        return timeDifference >= (60000 * db.antihog_min);
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.cooldown_trigger && db.cooldown_min) {
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user];
                         if (dispense_log.length <= db.cooldown_trigger)
                             return false;
-                        const last_tap = dispense_log[dispense_log.length - 1].time;
                         const cooldown_target = dispense_log[dispense_log.length - db.cooldown_trigger].time;
-                        const timeDifference = last_tap - cooldown_target;
+                        const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Cooldown times : ${db.cooldown_trigger}x${db.cooldown_min}m - ${timeDifference * 60000}m`)
-                        return timeDifference <= (60000 * db.cooldown_min);
+                        return timeDifference >= (60000 * db.cooldown_min);
                     }
                     return false;
                 })()
