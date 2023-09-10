@@ -69,7 +69,71 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         return [machine.cost, false]
                     return [db.cost, false]
                 })()
-                if ((user.credits - cost[0]) >= 0 || user.free_play) {
+                const isCooldown = (() => {
+                    if (history.dispense_log[db.cards[req.params.card].user] && machine.antihog_trigger && machine.antihog_min) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        if (dispense_log.length <= machine.antihog_trigger)
+                            return false;
+                        const last_tap = dispense_log[dispense_log.length - 1].time;
+                        const cooldown_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
+                        const timeDifference = last_tap - cooldown_target;
+                        return timeDifference <= (60000 * machine.antihog_min);
+                    }
+                    if (history.dispense_log[db.cards[req.params.card].user] && db.antihog_trigger && db.antihog_min) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        if (dispense_log.length <= db.antihog_trigger)
+                            return false;
+                        const last_tap = dispense_log[dispense_log.length - 1].time;
+                        const cooldown_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
+                        const timeDifference = last_tap - cooldown_target;
+                        return timeDifference <= (60000 * db.antihog_min);
+                    }
+                    if (history.dispense_log[db.cards[req.params.card].user] && db.cooldown_trigger && db.cooldown_min) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        if (dispense_log.length <= db.cooldown_trigger)
+                            return false;
+                        const last_tap = dispense_log[dispense_log.length - 1].time;
+                        const cooldown_target = dispense_log[dispense_log.length - db.cooldown_trigger].time;
+                        const timeDifference = last_tap - cooldown_target;
+                        return timeDifference <= (60000 * db.cooldown_min);
+                    }
+                    return false;
+                })()
+                if (isCooldown) {
+                    if (!history.dispense_log[db.cards[req.params.card].user])
+                        history.dispense_log[db.cards[req.params.card].user] = [];
+                    history.dispense_log[db.cards[req.params.card].user].push({
+                        machine: req.params.machine_id,
+                        card: req.params.card,
+                        cost: cost[0],
+                        free_play: user.free_play || cost[1],
+                        status: false,
+                        time: Date.now().valueOf()
+                    })
+                    if (!history.cards[req.params.card])
+                        history.cards[req.params.card] = {};
+                    history.cards[req.params.card] = {
+                        machine: req.params.machine_id,
+                        authorised: true,
+                        time: Date.now().valueOf()
+                    }
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(saveDatabase, 5000);
+                    if (machine && machine.vfd) {
+                        //後でもう一度試してください
+                        callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$8FA282C582B582A088EA8E9A8AAC82B782C682A882C982D082C5@$$! **' : '** Try again later! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                    }
+                    res.status(207).json({
+                        user_name: user.name,
+                        cost: cost[0],
+                        balance: user.credits,
+                        free_play: user.free_play || cost[1],
+                        status: false,
+                        currency_mode: !!(db.credit_to_currency_rate),
+                        currency_rate: db.credit_to_currency_rate,
+                        japanese: !!((machine && machine.jpn) || db.jpn)
+                    });
+                } else if ((user.credits - cost[0]) >= 0 || user.free_play) {
                     if (!user.free_play && !cost[1])
                         user.credits = user.credits - cost[0]
                     db.users[db.cards[req.params.card].user] = user;
@@ -1002,6 +1066,26 @@ app.get('/set/machine/name/:machine_id/:name', (req, res) => {
         res.status(500).end();
     }
 });
+app.get('/set/machine/antihog/:machine_id/:tap/:min', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            db.machines[req.params.machine_id].antihog_trigger = req.params.tap;
+            db.machines[req.params.machine_id].machines = req.params.min;
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${req.params.machine_id} antihog is ${req.params.tap} for ${req.params.min}min`);
+            console.log(`Machine ${req.params.machine_id} antihog is ${req.params.tap} for ${req.params.min}min`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
 app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -1185,6 +1269,40 @@ app.get('/set/arcade/freeplay/:value', (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send("Global free play is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
             console.log(`Global free_play is ${(req.params.value === "enable") ? "enabled" : "disabled"}`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/arcade/cooldown/:tap/:min', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.cooldown_trigger = parseInt(req.params.tap);
+            db.cooldown_min = parseFloat(req.params.min);
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Global cool down is ${db.cooldown_trigger} per ${db.cooldown_min}min`);
+            console.log(`Global cool down is ${db.cooldown_trigger} per ${db.cooldown_min}min`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/arcade/antihog/:tap/:min', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.antihog_trigger = parseInt(req.params.tap);
+            db.antihog_min = parseFloat(req.params.min);
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Global antihog is ${db.cooldown_trigger} credits per ${db.cooldown_min}min`);
+            console.log(`Global antihog is ${db.cooldown_trigger} credits per ${db.cooldown_min}min`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
