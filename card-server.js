@@ -123,7 +123,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         //後でもう一度試してください
                         callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$8FA282C582B582A088EA8E9A8AAC82B782C682A882C982D082C5@$$! **' : '** Try again later! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
-                    res.status(207).json({
+                    res.status(407).json({
                         user_name: user.name,
                         cost: cost[0],
                         balance: user.credits,
