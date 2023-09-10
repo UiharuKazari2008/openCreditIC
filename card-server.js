@@ -450,6 +450,9 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                     case 'delete_user':
                         if (db.cards[req.params.card] !== undefined) {
                             const user = db.cards[req.params.card].user;
+                            Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === user).map(d => {
+                                delete db.cards[d.serial];
+                            })
                             delete db.users[user];
                             db.cards = db.cards.filter(c => c.user !== user);
                             clearTimeout(saveTimeout);
@@ -693,8 +696,10 @@ app.get('/delete/user/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] !== undefined) {
+                Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === req.params.user).map(d => {
+                    delete db.cards[d.serial];
+                })
                 delete db.users[req.params.user];
-                db.cards = db.cards.filter(c => c.user !== req.params.user);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 res.status(200).send(`User Deleted ${req.params.user}`);
