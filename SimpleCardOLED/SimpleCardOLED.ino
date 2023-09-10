@@ -171,7 +171,7 @@ String getUID() {
 void checkWiFiConnection() {
   if (WiFi.status() != WL_CONNECTED) {
     setLEDs(CRGB::Magenta);
-    bootScreen(WiFi.macAddress());
+    bootScreen("NETWORK");
     Serial.println("WiFi not connected. Attempting to reconnect...");
     WiFi.hostname("SimpleCard");
     WiFi.disconnect(true);
@@ -183,7 +183,7 @@ void checkWiFiConnection() {
       if (digitalRead(BUTTON_PIN) == LOW) {
         ESP.restart();
       }
-      if (tryCount > 30) {
+      if (tryCount > 10) {
         ESP.restart();
       }
       delay(1000);
@@ -195,7 +195,9 @@ void checkWiFiConnection() {
     Serial.println(WiFi.localIP());
     Serial.print("MAC address: ");
     Serial.println(WiFi.macAddress());
+    bootScreen("CONFIG");
     getConfig();
+    delay(1000);
   }
 }
 void getConfig() {
@@ -220,10 +222,10 @@ void getConfig() {
     sys_button_remote_action = doc["button_callback"];
   }
 }
-void bootScreen(String message) {
+void bootScreen(String input_message) {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_HelvetiPixel_tr); // Choose your font
-  const char* string = "Not Ready";
+  const char* string = input_message.c_str();
   int textWidth = u8g2.getStrWidth(string);
   int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
   int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
@@ -233,6 +235,7 @@ void bootScreen(String message) {
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 64);
   u8g2.setFont(u8g2_font_HelvetiPixel_tr);
+  String message = WiFi.macAddress();
   int messageWidth = u8g2.getStrWidth(message.c_str());
   int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
   u8g2.drawStr(centerMsgX, 56, message.c_str());
@@ -260,7 +263,7 @@ void altScreen() {
       int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (((strlen(string) > 4) ? 16 : 32) / 2);
       int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
       u8g2.drawStr(centerX, centerY, string);
-      u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);  
+      u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
       int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
       u8g2.drawGlyph(centerGlX, centerGlY, (sys_jpn == true) ? 284 : 147);
     } else {
@@ -305,7 +308,7 @@ void standbyScreen() {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
     int centerGlX = (u8g2.getWidth() - 32) / 2;
     int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
     u8g2.drawGlyph(centerGlX, centerGlY, 139);
@@ -313,7 +316,7 @@ void standbyScreen() {
     const char* string = (sys_jpn == true) ? "カードをタップします!": "Tap your card!";
     int textWidth = u8g2.getUTF8Width(string);
     int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 50, string);
+    u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 55, string);
     u8g2.sendBuffer();
   } else {
     u8g2.setPowerSave(1);
@@ -335,7 +338,7 @@ void handleDisableReader() {
   int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
   int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawUTF8(centerX, centerY, string);
-  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);  
+  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 65);
   u8g2.setDrawColor(1);
@@ -345,7 +348,7 @@ void handleStartComm(String uid) {
   setLEDs(CRGB::Black);
   u8g2.setContrast(1);
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, 84);
@@ -353,7 +356,7 @@ void handleStartComm(String uid) {
   const char* string = (sys_jpn == true) ?  "接続中" : "Communicating...";
   int textWidth = u8g2.getUTF8Width(string);
   int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 50, string);
+  u8g2.drawUTF8(centerX, 55, string);
   u8g2.sendBuffer();
 }
 void handleInvalidCard(String uid) {
@@ -365,7 +368,7 @@ void handleInvalidCard(String uid) {
   u8g2.sendBuffer();
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, 121);
@@ -373,7 +376,7 @@ void handleInvalidCard(String uid) {
   const char* string = (sys_jpn == true) ? "無効なカード" : "Unregistered Card";
   int textWidth = u8g2.getUTF8Width(string);
   int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 50, string);
+  u8g2.drawUTF8(centerX, 55, string);
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
   int count = 3;
@@ -429,7 +432,7 @@ void handleCreditReponse(int httpCode, String message) {
     int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
     u8g2.drawStr(centerX, centerY, string);
 
-    u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);  
+    u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
     int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
     u8g2.drawGlyph(centerGlX, centerGlY, (jpn == true) ? 284 : 147);
   } else {

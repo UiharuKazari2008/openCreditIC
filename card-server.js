@@ -425,6 +425,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(404).end();
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
+                        pendingScan = null;
                         break;
                     case 'register_new_card':
                         if (db.users[pendingScan.data.user] !== undefined &&
@@ -449,6 +450,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                             res.status(400).send("Card Already Exists!");
                         }
+                        pendingScan = null;
                         break;
                     case 'delete_user':
                         if (db.cards[req.params.card] !== undefined) {
@@ -468,6 +470,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
+                        pendingScan = null;
                         break;
                     case 'delete_card':
                         if (db.cards[req.params.card] !== undefined) {
@@ -482,6 +485,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
+                        pendingScan = null;
                         break;
                     case 'freeplay_card':
                         if (db.cards[req.params.card] !== undefined &&
@@ -511,6 +515,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(404).end();
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
+                        pendingScan = null;
                         break;
                     case 'transfer_card':
                         if (db.cards[req.params.card] !== undefined) {
@@ -557,7 +562,6 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                         }
                         break;
                 }
-                pendingScan = null;
             } else {
                 if (db.cards[req.params.card] !== undefined &&
                     db.users[db.cards[req.params.card].user]) {
