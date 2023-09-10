@@ -100,7 +100,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     return false;
                 })()
                 if (isCooldown) {
-                    if (!history.dispense_log[db.cards[req.params.card].user])
+                    /*if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
                         machine: req.params.machine_id,
@@ -109,7 +109,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         free_play: user.free_play || cost[1],
                         status: false,
                         time: Date.now().valueOf()
-                    })
+                    })*/
                     if (!history.cards[req.params.card])
                         history.cards[req.params.card] = {};
                     history.cards[req.params.card] = {
