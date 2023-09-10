@@ -436,6 +436,9 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                                 locked: false
                             }
                             db.cards[req.params.card] = card;
+                            if (pendingScan.data.transferred) {
+                                delete db.cards[pendingScan.data.transferred];
+                            }
                             clearTimeout(saveTimeout);
                             saveTimeout = setTimeout(saveDatabase, 5000);
                             console.log(`New Card Created: ${req.params.card} for ${pendingScan.data.user}`, card)
@@ -507,6 +510,28 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                         } else {
                             res.status(404).end();
                             console.error(`Unknown Card: ${req.params.card}`)
+                        }
+                        break;
+                    case 'transfer_card':
+                        if (db.cards[req.params.card] !== undefined) {
+                            const old_card = db.cards[req.params.card];
+                            pendingScan = {
+                                command: "register_new_card",
+                                data: {
+                                    user: old_card.user,
+                                    name: req.query.card_name || null,
+                                    contact: req.query.card_contact || null,
+                                    locked: false,
+                                    transferred: req.params.card,
+                                }
+                            }
+                            console.log(`Ready for new card: ${req.params.card} `, old_card)
+                            res.status(215).json({
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                        } else {
+                            console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
+                            res.status(400).send("Card Already Exists!");
                         }
                         break;
                     default:
@@ -715,26 +740,6 @@ app.get('/delete/user/:user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/delete/card/:card', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            if (db.cards[req.params.card] !== undefined) {
-                delete db.cards[req.params.user];
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                res.status(200).send(`Card Deleted ${req.params.card}`);
-            } else {
-                console.error(`Card does not exists: ${req.params.card}`)
-                res.status(404).send("Card does not exists!");
-            }
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).send("Internal System Error");
-        }
-    } else {
-        res.status(500).end();
-    }
-});
 app.get('/delete/scan/user', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -749,46 +754,6 @@ app.get('/delete/scan/user', (req, res) => {
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send("Internal System Error");
-        }
-    } else {
-        res.status(500).end();
-    }
-});
-app.get('/delete/scan/card', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            pendingScan = {
-                command: "delete_card",
-                data: {
-
-                }
-            }
-            console.log(`New Pending Card Deletion`)
-            res.status(200).send(`Waiting for card to be scanned for card delete operation`);
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).send("Internal System Error");
-        }
-    } else {
-        res.status(500).end();
-    }
-});
-app.get('/reassign/:user/:card', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            if (db.users[req.params.user] !== undefined &&
-                db.cards[req.params.card] !== undefined) {
-                db.cards[req.params.card].user = req.params.user;
-                res.status(200).send("Moved Card!");
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`Card Moved: ${req.params.card} for ${req.params.user}`)
-            } else {
-                res.status(400);
-            }
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).end();
         }
     } else {
         res.status(500).end();
@@ -815,22 +780,80 @@ app.get('/set/card/lock/:card/:value', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/revoke/card/:card', (req, res) => {
+app.get('/reassign/card/:user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.cards[req.params.card] !== undefined) {
-                db.cards[req.params.card] = null;
-                delete db.cards[req.params.card];
-                res.status(200).send("Card revoked: " + req.params.card);
+            if (db.users[req.params.user] !== undefined &&
+                db.cards[req.params.card] !== undefined) {
+                db.cards[req.params.card].user = req.params.user;
+                res.status(200).send("Moved Card!");
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log("Card revoked: " + req.params.card)
+                console.log(`Card Moved: ${req.params.card} for ${req.params.user}`)
             } else {
                 res.status(400);
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/reassign/scan', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "transfer_card",
+                data: {
+
+                }
+            }
+            console.log(`New Pending Card Transfer`)
+            res.status(200).send(`Waiting for card to be scanned for card transfer operation`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/scan/card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan = {
+                command: "delete_card",
+                data: {
+
+                }
+            }
+            console.log(`New Pending Card Deletion`)
+            res.status(200).send(`Waiting for card to be scanned for card delete operation`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/delete/card/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.cards[req.params.card] !== undefined) {
+                delete db.cards[req.params.user];
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                res.status(200).send(`Card Deleted ${req.params.card}`);
+            } else {
+                console.error(`Card does not exists: ${req.params.card}`)
+                res.status(404).send("Card does not exists!");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
         }
     } else {
         res.status(500).end();
