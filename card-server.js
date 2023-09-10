@@ -497,12 +497,31 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(404).end();
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
-                        res.status(500).send("Unknown Server Command");
                         break;
                 }
                 pendingScan = null;
             } else {
-                res.status(410).send("Unknown Server Command");
+                if (db.cards[req.params.card] !== undefined &&
+                    db.users[db.cards[req.params.card].user]) {
+                    let user = db.users[db.cards[req.params.card].user];
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(saveDatabase, 5000);
+                    res.status(200).json({
+                        user_name: user.name,
+                        cost: 0,
+                        balance: user.credits,
+                        free_play: user.free_play,
+                        status: false,
+                        currency_mode: !!(db.credit_to_currency_rate),
+                        currency_rate: db.credit_to_currency_rate,
+                        japanese: !!((machine && machine.jpn) || db.jpn)
+                    });
+                    console.log(`Card Scan No Action: ${req.params.card} for ${db.cards[req.params.card].user} : Balance = ${user.credits}`)
+                } else {
+                    res.status(404).end();
+                    console.error(`Unknown Card: ${req.params.card}`)
+                }
+                //res.status(410).send("Unknown Server Command");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
