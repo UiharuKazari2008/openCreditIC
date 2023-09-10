@@ -133,6 +133,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         currency_rate: db.credit_to_currency_rate,
                         japanese: !!((machine && machine.jpn) || db.jpn)
                     });
+                    console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Cooldown is active`)
                 } else if ((user.credits - cost[0]) >= 0 || user.free_play) {
                     if (!user.free_play && !cost[1])
                         user.credits = user.credits - cost[0]
