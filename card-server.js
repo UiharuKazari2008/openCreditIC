@@ -667,17 +667,16 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
                 !db.cards[req.params.card].locked &&
                 db.users[db.cards[req.params.card].user] !== undefined &&
                 !db.users[db.cards[req.params.card].user].locked) {
+                res.status(200).send("Callback OK");
                 request.get({
                     url: db.machines[req.params.machine_id].blocked_callback,
                 }, async function (err, res, body) {
                     if (err) {
                         console.error(err.message);
                         console.error("FAULT Getting Response Data");
-                        res.status(504).send("Callback Failed");
-                    } else {
-                        res.status(res.statusCode).send("Callback OK");
                     }
                 })
+
             } else {
                 res.status(404).send("No Callback for this machine");
             }

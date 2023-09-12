@@ -570,9 +570,9 @@ void handleBlocked(bool force, String uid) {
       delay(15000);
     }
   } else if (waitingForUnblock == true) {
-    handleAltStandby();
-  } else if (sys_callbackOnBlockedTap == true) {
     
+  } else if (sys_callbackOnBlockedTap == true) {
+    handleAltStandby();
   } else if (blockState == 0 || force == true) {
     blockState = 1;
     setLEDs(CRGB::Black);
