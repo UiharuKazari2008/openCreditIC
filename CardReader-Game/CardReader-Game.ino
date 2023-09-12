@@ -329,6 +329,8 @@ void standbyScreen() {
     int centerX = (u8g2.getWidth() - textWidth) / 2;
     u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 55, string);
     u8g2.sendBuffer();
+  } else if (sys_callbackOnBlockedTap == true){
+    handleAltStandby();
   } else {
     u8g2.setPowerSave(1);
   }
@@ -353,6 +355,24 @@ void handleDisableReader() {
   u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 65);
+  u8g2.setDrawColor(1);
+  u8g2.sendBuffer();
+}
+void handleAltStandby() {
+  setLEDs(CRGB::Black);
+  u8g2.setPowerSave(0);
+  u8g2.setContrast(1);
+  u8g2.clearBuffer();
+  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+  const char* string = (sys_jpn == true) ? "省エネモード" : "Energy Saving";
+  int textWidth = u8g2.getUTF8Width(string);
+  int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
+  int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
+  int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  u8g2.drawUTF8(centerX, centerY, string);
+  u8g2.setFont(u8g2_font_streamline_ecology_t);
+  int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  u8g2.drawGlyph(centerGlX, centerGlY, 58);
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
 }
@@ -550,20 +570,7 @@ void handleBlocked(bool force, String uid) {
       delay(15000);
     }
   } else if (sys_callbackOnBlockedTap == true) {
-    u8g2.setContrast(1);
-    u8g2.clearBuffer();
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
-    const char* string = (sys_jpn == true) ? "省エネモード" : "Energy Saving";
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
-    int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_ecology_t);
-    int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
-    u8g2.drawGlyph(centerGlX, centerGlY, 58);
-    u8g2.setDrawColor(1);
-    u8g2.sendBuffer();
+    handleAltStandby();
   } else if (blockState == 0 || force == true) {
     blockState = 1;
     setLEDs(CRGB::Black);

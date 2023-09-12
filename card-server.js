@@ -1239,7 +1239,7 @@ app.get('/revoke/machine/:machine_id', (req, res) => {
 app.get('/get/machine/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (!db.machines[req.params.machine_id] === undefined) {
+            if (db.machines[req.params.machine_id] !== undefined) {
                 res.status(200).json({
                     cost: db.cost,
                     free_play: db.free_play,
