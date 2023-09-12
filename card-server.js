@@ -675,7 +675,7 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
                         console.error("FAULT Getting Response Data");
                         res.status(504).send("Callback Failed");
                     } else {
-                        res.status(200).send("Callback OK");
+                        res.status(res.statusCode).send("Callback OK");
                     }
                 })
             } else {

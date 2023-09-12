@@ -556,7 +556,7 @@ void handleBlocked(bool force, String uid) {
     handleBootUpReader();
     waitingForUnblock = true;
     delay(15000);
-  } else if ((uid != "" && sys_callbackOnBlockedTap == true) || waitingForUnblock == true) {
+  } else if (uid != "" && sys_callbackOnBlockedTap == true) {
     HTTPClient http;
     String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid;
     Serial.println("Sending GET request to: " + url);
@@ -569,8 +569,10 @@ void handleBlocked(bool force, String uid) {
       waitingForUnblock = true;
       delay(15000);
     }
-  } else if (sys_callbackOnBlockedTap == true) {
+  } else if (waitingForUnblock == true) {
     handleAltStandby();
+  } else if (sys_callbackOnBlockedTap == true) {
+    
   } else if (blockState == 0 || force == true) {
     blockState = 1;
     setLEDs(CRGB::Black);
