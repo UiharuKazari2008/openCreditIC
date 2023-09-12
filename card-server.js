@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
 app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, res) => {
     if (db.cards && db.users) {
         try {
-            const machine = db.machines[req.params.machine_id] || {}
+            const machine = db.machines[(req.params.machine_id).toUpperCase()] || {}
             if (db.cards[req.params.card] !== undefined &&
                 !db.cards[req.params.card].locked &&
                 db.users[db.cards[req.params.card].user] !== undefined &&
@@ -103,7 +103,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     /*if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
@@ -113,7 +113,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     if (!history.cards[req.params.card])
                         history.cards[req.params.card] = {};
                     history.cards[req.params.card] = {
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         authorised: true,
                         time: Date.now().valueOf()
                     }
@@ -133,7 +133,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         currency_rate: db.credit_to_currency_rate,
                         japanese: !!((machine && machine.jpn) || db.jpn)
                     });
-                    console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Cooldown is active`)
+                    console.log(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Cooldown is active`)
                 } else if ((user.credits - cost[0]) >= 0 || user.free_play) {
                     if (!user.free_play && !cost[1])
                         user.credits = user.credits - cost[0]
@@ -141,7 +141,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
@@ -151,7 +151,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     if (!history.cards[req.params.card])
                         history.cards[req.params.card] = {};
                     history.cards[req.params.card] = {
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         authorised: true,
                         time: Date.now().valueOf()
                     }
@@ -203,12 +203,12 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             console.error("FAULT Sending Withdraw Call");
                         }
                     }
-                    console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
+                    console.log(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
                 } else {
                     if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
@@ -218,7 +218,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     if (!history.cards[req.params.card])
                         history.cards[req.params.card] = {};
                     history.cards[req.params.card] = {
-                        machine: req.params.machine_id,
+                        machine: (req.params.machine_id).toUpperCase(),
                         authorised: true,
                         time: Date.now().valueOf()
                     }
@@ -236,7 +236,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                         currency_rate: db.credit_to_currency_rate,
                         japanese: !!((machine && machine.jpn) || db.jpn)
                     });
-                    console.error(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
+                    console.error(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
                 res.status(404).end();
@@ -247,11 +247,11 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = {};
                 history.cards[req.params.card] ={
-                    machine: req.params.machine_id,
+                    machine: (req.params.machine_id).toUpperCase(),
                     authorised: false,
                     time: Date.now().valueOf()
                 }
-                console.error(`${req.params.machine_id} - Unknown Card: ${req.params.card}`)
+                console.error(`${(req.params.machine_id).toUpperCase()} - Unknown Card: ${req.params.card}`)
 
             }
         } catch (e) {
@@ -472,7 +472,7 @@ app.get('/get/history/cards', (req, res) => {
 app.get('/callback/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
-            const machine = db.machines[req.params.machine_id] || {}
+            const machine = db.machines[(req.params.machine_id).toUpperCase()] || {}
             if (pendingScan && pendingScan.command) {
                 switch (pendingScan.command) {
                     case 'deposit_card':
@@ -676,19 +676,19 @@ app.get('/callback/:machine_id/:card', (req, res) => {
 app.get('/blocked_callback/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] !== undefined &&
-                db.machines[req.params.machine_id].blocked_callback !== undefined &&
+            if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined &&
+                db.machines[(req.params.machine_id).toUpperCase()].blocked_callback !== undefined &&
                 db.cards[req.params.card] !== undefined &&
                 !db.cards[req.params.card].locked &&
                 db.users[db.cards[req.params.card].user] !== undefined &&
                 !db.users[db.cards[req.params.card].user].locked) {
                 res.status(200).send("Callback OK");
-                if (db.machines[req.params.machine_id] && db.machines[req.params.machine_id].vfd) {
+                if (db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].vfd) {
                     //ちょっと 待って
-                    callVFD(db.machines[req.params.machine_id], ((db.machines[req.params.machine_id] && db.machines[req.params.machine_id].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...', '')
+                    callVFD(db.machines[(req.params.machine_id).toUpperCase()], ((db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...', '')
                 }
                 request.get({
-                    url: db.machines[req.params.machine_id].blocked_callback,
+                    url: db.machines[(req.params.machine_id).toUpperCase()].blocked_callback,
                 }, async function (err, res, body) {
                     if (err) {
                         console.error(err.message);
@@ -1080,14 +1080,14 @@ app.get('/revoke/:user/', (req, res) => {
 app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].cost = parseFloat(req.params.cost)
+            db.machines[(req.params.machine_id).toUpperCase()].cost = parseFloat(req.params.cost)
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            console.log(`Machine ${req.params.machine_id} now costs ${req.params.cost}`)
-            res.status(200).send(`Machine ${req.params.machine_id} now costs ${req.params.cost}`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} now costs ${req.params.cost}`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now costs ${req.params.cost}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1099,14 +1099,14 @@ app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
 app.get('/set/machine/name/:machine_id/:name', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].name = req.params.name
+            db.machines[(req.params.machine_id).toUpperCase()].name = req.params.name
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} is named ${req.params.name}`);
-            console.log(`Machine ${req.params.machine_id} is named ${req.params.name}`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} is named ${req.params.name}`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} is named ${req.params.name}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1118,15 +1118,15 @@ app.get('/set/machine/name/:machine_id/:name', (req, res) => {
 app.get('/set/machine/antihog/:machine_id/:tap/:min', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].antihog_trigger = req.params.tap;
-            db.machines[req.params.machine_id].machines = req.params.min;
+            db.machines[(req.params.machine_id).toUpperCase()].antihog_trigger = req.params.tap;
+            db.machines[(req.params.machine_id).toUpperCase()].machines = req.params.min;
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} antihog is ${req.params.tap} for ${req.params.min}min`);
-            console.log(`Machine ${req.params.machine_id} antihog is ${req.params.tap} for ${req.params.min}min`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} antihog is ${req.params.tap} for ${req.params.min}min`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} antihog is ${req.params.tap} for ${req.params.min}min`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1138,14 +1138,14 @@ app.get('/set/machine/antihog/:machine_id/:tap/:min', (req, res) => {
 app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].vfd = `http://${req.params.ip_address}:${req.params.port}`
+            db.machines[(req.params.machine_id).toUpperCase()].vfd = `http://${req.params.ip_address}:${req.params.port}`
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} now has a VFD enabled`);
-            console.log(`Machine ${req.params.machine_id} now has a VFD enabled`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now has a VFD enabled`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a VFD enabled`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1157,14 +1157,14 @@ app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
 app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].button_callback = decodeURIComponent(req.params.api_endpoint)
+            db.machines[(req.params.machine_id).toUpperCase()].button_callback = decodeURIComponent(req.params.api_endpoint)
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`);
-            console.log(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now has a button function: ${db.machines[(req.params.machine_id).toUpperCase()].button_callback}`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a button function: ${db.machines[(req.params.machine_id).toUpperCase()].button_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1176,20 +1176,20 @@ app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
 app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
             if (req.params.api_endpoint === null) {
-                delete db.machines[req.params.machine_id].blocked_callback;
-                delete db.machines[req.params.machine_id].has_blocked_callback;
+                delete db.machines[(req.params.machine_id).toUpperCase()].blocked_callback;
+                delete db.machines[(req.params.machine_id).toUpperCase()].has_blocked_callback;
             } else {
-                db.machines[req.params.machine_id].blocked_callback = decodeURIComponent(req.params.api_endpoint);
-                db.machines[req.params.machine_id].has_blocked_callback = true;
+                db.machines[(req.params.machine_id).toUpperCase()].blocked_callback = decodeURIComponent(req.params.api_endpoint);
+                db.machines[(req.params.machine_id).toUpperCase()].has_blocked_callback = true;
             }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} now has a blocked callback function: ${db.machines[req.params.machine_id].blocked_callback}`);
-            console.log(`Machine ${req.params.machine_id} now has a blocked callback function: ${db.machines[req.params.machine_id].blocked_callback}`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now has a blocked callback function: ${db.machines[(req.params.machine_id).toUpperCase()].blocked_callback}`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a blocked callback function: ${db.machines[(req.params.machine_id).toUpperCase()].blocked_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1201,18 +1201,18 @@ app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) =>
 app.get('/set/machine/withdraw_callback/:machine_id/:api_endpoint', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
             if (req.params.api_endpoint === null) {
-                delete db.machines[req.params.machine_id].withdraw_callback;
+                delete db.machines[(req.params.machine_id).toUpperCase()].withdraw_callback;
             } else {
-                db.machines[req.params.machine_id].withdraw_callback = decodeURIComponent(req.params.api_endpoint);
+                db.machines[(req.params.machine_id).toUpperCase()].withdraw_callback = decodeURIComponent(req.params.api_endpoint);
             }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(`Machine ${req.params.machine_id} now has a withdraw callback function: ${db.machines[req.params.machine_id].withdraw_callback}`);
-            console.log(`Machine ${req.params.machine_id} now has a blocked withdraw function: ${db.machines[req.params.machine_id].withdraw_callback}`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now has a withdraw callback function: ${db.machines[(req.params.machine_id).toUpperCase()].withdraw_callback}`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a blocked withdraw function: ${db.machines[(req.params.machine_id).toUpperCase()].withdraw_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1224,14 +1224,14 @@ app.get('/set/machine/withdraw_callback/:machine_id/:api_endpoint', (req, res) =
 app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].free_play = (req.params.value === "enable");
+            db.machines[(req.params.machine_id).toUpperCase()].free_play = (req.params.value === "enable");
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id);
-            console.log(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + req.params.machine_id)
+            res.status(200).send(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + (req.params.machine_id).toUpperCase());
+            console.log(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + (req.params.machine_id).toUpperCase())
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1243,10 +1243,10 @@ app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
 app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] === undefined) {
-                db.machines[req.params.machine_id] = {};
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[req.params.machine_id].jpn = (req.params.value === "enable");
+            db.machines[(req.params.machine_id).toUpperCase()].jpn = (req.params.value === "enable");
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send("Machine VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"));
@@ -1262,12 +1262,12 @@ app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
 app.get('/revoke/machine/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.machines[req.params.machine_id] = null;
-            delete db.machines[req.params.machine_id];
+            db.machines[(req.params.machine_id).toUpperCase()] = null;
+            delete db.machines[(req.params.machine_id).toUpperCase()];
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
-            res.status(200).send("Machine deleted: " + req.params.machine_id);
-            console.log("Machine deleted: " + req.params.machine_id);
+            res.status(200).send("Machine deleted: " + (req.params.machine_id).toUpperCase());
+            console.log("Machine deleted: " + (req.params.machine_id).toUpperCase());
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
@@ -1279,14 +1279,14 @@ app.get('/revoke/machine/:machine_id', (req, res) => {
 app.get('/get/machine/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[req.params.machine_id] !== undefined) {
+            if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {
                 res.status(200).json({
                     cost: db.cost,
                     free_play: db.free_play,
                     japanese: db.jpn,
                     currency_mode: !!(db.credit_to_currency_rate),
                     currency_rate: db.credit_to_currency_rate,
-                    ...db.machines[req.params.machine_id]
+                    ...db.machines[(req.params.machine_id).toUpperCase()]
                 })
             } else {
                 res.status(200).json({
