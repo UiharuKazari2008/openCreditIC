@@ -27,6 +27,7 @@ int testReader = 0;
 int blockState = 0;
 int blockOverride = 0;
 bool lastButtonState = false;
+bool waitingForUnblock = false;
 
 char *sys_name = "";
 bool sys_jpn = false;
@@ -35,6 +36,7 @@ bool sys_currency_mode = false;
 bool sys_button_remote_action = false;
 float sys_currency_rate = 1;
 float sys_cost = 1;
+bool sys_callbackOnBlockedTap = false;
 
 void setup() {
   Serial.begin(115200);
@@ -64,7 +66,7 @@ void setup() {
       standbyScreen();
     } else {
       blockOverride = 0;
-      handleBlocked(true);
+      handleBlocked(true, false);
     }
     enableState = 1;
     Serial.print("Set coin blocker overide: ");
@@ -87,7 +89,7 @@ void setup() {
     if (blockState = 0) {
       standbyScreen();
     } else {
-      handleBlocked(true);
+      handleBlocked(true, true);
     }
     enableState = 1;
     server.send(200, "text/plain", "OK");
@@ -111,7 +113,7 @@ void setup() {
 void loop() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-      handleBlocked(false);
+      handleBlocked(false, true);
     } else if (blockState == 1) {
       handleUnblocking();
     } else if (enableState == 1) {
@@ -156,7 +158,7 @@ void loop() {
     lastButtonState = false;
     standbyScreen();
   } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-    handleBlocked(false);
+    handleBlocked(false, false);
   } else if (digitalRead(BLOCK_PIN) == LOW && blockState == 1) {
     handleUnblocking();
   }
@@ -224,6 +226,7 @@ void getConfig() {
     sys_currency_rate = (sys_currency_mode == true) ? doc["currency_rate"] : 0;
     sys_jpn = doc["japanese"];
     sys_button_remote_action = doc["button_callback"];
+    sys_sys_callbackOnBlockedTap = doc["has_blocked_callback"];
   }
 }
 void bootScreen(String input_message) {
@@ -307,7 +310,9 @@ void altScreen() {
   u8g2.sendBuffer();
 }
 void standbyScreen() {
-  if (blockState == 0 || blockOverride == 1) {
+  if (waitingForUnblock == true) {
+    handleBlocked(false, false);
+  } else if (blockState == 0 || blockOverride == 1) {
     setLEDs(CRGB::Yellow);
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
@@ -328,6 +333,7 @@ void standbyScreen() {
 }
 void handleDisableReader() {
   setLEDs(CRGB::Black);
+  waitingForUnblock = false;
   u8g2.setContrast(1);
   u8g2.clearBuffer();
   u8g2.setDrawColor(1);
@@ -345,6 +351,23 @@ void handleDisableReader() {
   u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 65);
+  u8g2.setDrawColor(1);
+  u8g2.sendBuffer();
+}
+void handleBootUpReader() {
+  setLEDs(CRGB::Black);
+  u8g2.setPowerSave(0);
+  u8g2.setContrast(1);
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+  int centerGlX = (u8g2.getWidth() - 32) / 2;
+  int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+  u8g2.drawGlyph(centerGlX, centerGlY, 205);
+  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+  const char* string = (sys_jpn == true) ? "ちょっと 待って..." : "Please Wait...";
+  int textWidth = u8g2.getUTF8Width(string);
+  int centerX = (u8g2.getWidth() - textWidth) / 2;
+  u8g2.drawUTF8(centerX, 55, string);
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
 }
@@ -506,8 +529,21 @@ void handleCreditReponse(int httpCode, String message) {
     delay(2500);
   }
 }
-void handleBlocked(bool force) {
-  if (blockState == 0 || force == true) {
+void handleBlocked(bool force, bool card_scanned) {
+  if ((card_scanned == true && sys_callbackOnBlockedTap == true) || waitingForUnblock == true) {
+    HTTPClient http;
+    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress();
+    Serial.println("Sending GET request to: " + url);
+    http.begin(url);
+    int httpCode = http.GET();
+    http.end();
+    Serial.println("HTTP Response code: " + String(httpCode));
+    if (httpCode == 200) {
+      handleBootUpReader();
+      waitingForUnblock = true;
+      delay(15000);
+    }
+  } else if (blockState == 0 || force == true) {
     blockState = 1;
     setLEDs(CRGB::Black);
     FastLED.show();
@@ -516,6 +552,7 @@ void handleBlocked(bool force) {
   }
 }
 void handleUnblocking() {
+  waitingForUnblock = false;
   blockState = 0;
   enableState = 1;
   Serial.println("Game has enabled card reader!");

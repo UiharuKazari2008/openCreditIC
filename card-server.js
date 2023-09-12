@@ -658,6 +658,33 @@ app.get('/callback/:machine_id/:card', (req, res) => {
         res.status(500).end();
     }
 })
+app.get('/blocked_callback/:machine_id', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] !== undefined &&
+                db.machines[req.params.machine_id].blocked_callback !== undefined) {
+                request.get({
+                    url: db.machines[req.params.machine_id].blocked_callback,
+                }, async function (err, res, body) {
+                    if (err) {
+                        console.error(err.message);
+                        console.error("FAULT Getting Response Data");
+                        res.status(504).send("Callback Failed");
+                    } else {
+                        res.status(200).send("Callback OK");
+                    }
+                })
+            } else {
+                res.status(404).send("No Callback for this machine");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+})
 app.get('/cancel_pending', (req, res) => {
     console.log("Cancelling pending");
     pendingScan = null;
@@ -1117,6 +1144,31 @@ app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`);
             console.log(`Machine ${req.params.machine_id} now has a button function: ${db.machines[req.params.machine_id].button_callback}`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).end();
+        }
+    } else {
+        res.status(500).end();
+    }
+});
+app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[req.params.machine_id] === undefined) {
+                db.machines[req.params.machine_id] = {};
+            }
+            if (req.params.api_endpoint !== null) {
+                delete db.machines[req.params.machine_id].blocked_callback;
+                delete db.machines[req.params.machine_id].has_blocked_callback;
+            } else {
+                db.machines[req.params.machine_id].blocked_callback = decodeURIComponent(req.params.api_endpoint);
+                db.machines[req.params.machine_id].has_blocked_callback = true;
+            }
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${req.params.machine_id} now has a blocked callback function: ${db.machines[req.params.machine_id].blocked_callback}`);
+            console.log(`Machine ${req.params.machine_id} now has a blocked callback function: ${db.machines[req.params.machine_id].blocked_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).end();
