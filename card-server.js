@@ -47,6 +47,16 @@ function callVFD(machine, line1, line2) {
         }
     })
 }
+function callVFDCenter(machine, line1) {
+    request.get({
+        url: machine.vfd + `/alertCenter?header=${line1}`,
+    }, async function (err, res, body) {
+        if (err) {
+            console.error(err.message);
+            console.error("FAULT Getting Response Data");
+        }
+    })
+}
 app.get('/', (req, res) => {
     res.status(200).send("FastPay Server Beta");
 });
@@ -685,7 +695,7 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
                 res.status(200).send("Callback OK");
                 if (db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].vfd) {
                     //ちょっと 待って
-                    callVFD(db.machines[(req.params.machine_id).toUpperCase()], ((db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...', '')
+                    callVFDCenter(db.machines[(req.params.machine_id).toUpperCase()], ((db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...')
                 }
                 request.get({
                     url: db.machines[(req.params.machine_id).toUpperCase()].blocked_callback,
