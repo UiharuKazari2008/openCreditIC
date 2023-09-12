@@ -117,6 +117,7 @@ void loop() {
       Serial.print("Card Detected: ");
       handleBlocked(false, uid);
     } else if (blockState == 1) {
+      waitingForUnblock = false;
       handleUnblocking();
     } else if (enableState == 1) {
       // A new card is detected, read its UID.
@@ -153,15 +154,18 @@ void loop() {
         standbyScreen();
       }
     }
-  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false) {
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false && enableState == 1) {
     lastButtonState = true;
     altScreen();
-  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && enableState == 1) {
+    
+  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && enableState == 1) {
     lastButtonState = false;
     standbyScreen();
   } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
     handleBlocked(false, "");
   } else if (digitalRead(BLOCK_PIN) == LOW && blockState == 1) {
+    waitingForUnblock = false;
     handleUnblocking();
   }
   checkWiFiConnection();
@@ -252,7 +256,7 @@ void bootScreen(String input_message) {
 }
 void altScreen() {
   u8g2.setPowerSave(0);
-  if (blockState == 0 || blockOverride == 1) {
+  if ((blockState == 0 || blockOverride == 1) && enableState == 1) {
     u8g2.setContrast(1);
     u8g2.clearBuffer();
     if (sys_free_play == true) {
@@ -312,9 +316,7 @@ void altScreen() {
   u8g2.sendBuffer();
 }
 void standbyScreen() {
-  if (waitingForUnblock == true) {
-    handleBlocked(false, "");
-  } else if (blockState == 0 || blockOverride == 1) {
+  if (blockState == 0 || blockOverride == 1) {
     setLEDs(CRGB::Yellow);
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
@@ -329,6 +331,8 @@ void standbyScreen() {
     int centerX = (u8g2.getWidth() - textWidth) / 2;
     u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 55, string);
     u8g2.sendBuffer();
+  } else if (waitingForUnblock == true && digitalRead(BLOCK_PIN) == HIGH) {
+    handleBlocked(false, "");
   } else if (sys_callbackOnBlockedTap == true){
     handleAltStandby();
   } else {
@@ -553,10 +557,12 @@ void handleCreditReponse(int httpCode, String message) {
 }
 void handleBlocked(bool force, String uid) {
   if (uid == "enable" && sys_callbackOnBlockedTap == true) {
+    blockState = 1;
     handleBootUpReader();
     waitingForUnblock = true;
     delay(15000);
   } else if (uid != "" && sys_callbackOnBlockedTap == true) {
+    blockState = 1;
     HTTPClient http;
     String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid;
     Serial.println("Sending GET request to: " + url);
@@ -569,9 +575,10 @@ void handleBlocked(bool force, String uid) {
       waitingForUnblock = true;
       delay(15000);
     }
-  } else if (waitingForUnblock == true) {
-    
+  } else if (waitingForUnblock == true && digitalRead(BLOCK_PIN) == HIGH) {
+    blockState = 1;
   } else if (sys_callbackOnBlockedTap == true) {
+    blockState = 1;
     handleAltStandby();
   } else if (blockState == 0 || force == true) {
     blockState = 1;

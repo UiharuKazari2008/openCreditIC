@@ -667,6 +667,10 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
                 !db.cards[req.params.card].locked &&
                 db.users[db.cards[req.params.card].user] !== undefined &&
                 !db.users[db.cards[req.params.card].user].locked) {
+                if (db.machines[req.params.machine_id] && db.machines[req.params.machine_id].vfd) {
+                    //ちょっと 待って
+                    callVFD(db.machines[req.params.machine_id], ((db.machines[req.params.machine_id] && db.machines[req.params.machine_id].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...', '')
+                }
                 res.status(200).send("Callback OK");
                 request.get({
                     url: db.machines[req.params.machine_id].blocked_callback,
@@ -676,7 +680,6 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
                         console.error("FAULT Getting Response Data");
                     }
                 })
-
             } else {
                 res.status(404).send("No Callback for this machine");
             }
