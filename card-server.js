@@ -188,6 +188,21 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                             japanese: !!((machine && machine.jpn) || db.jpn)
                         });
                     }
+                    if (machine && machine.withdraw_callback) {
+                        try {
+                            request.get({
+                                url: machine.withdraw_callback,
+                            }, async function (err, res, body) {
+                                if (err) {
+                                    console.error(err.message);
+                                    console.error("FAULT Sending Withdraw Call");
+                                }
+                            })
+                        } catch (err) {
+                            console.error(err.message);
+                            console.error("FAULT Sending Withdraw Call");
+                        }
+                    }
                     console.log(`${machine.name || req.params.machine_id} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
                 } else {
                     if (!history.dispense_log[db.cards[req.params.card].user])
