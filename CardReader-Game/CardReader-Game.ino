@@ -86,12 +86,12 @@ void setup() {
     server.send(200, "text/plain", (testReader == 1) ? "Reader Test Mode" : "Normal Mode");
   });
   server.on("/enable", [=]() {
+    enableState = 1;
     if (blockState = 0) {
       standbyScreen();
     } else {
       handleBlocked(true, "enable");
     }
-    enableState = 1;
     server.send(200, "text/plain", "OK");
   });
   server.on("/disable", [=]() {
@@ -154,12 +154,12 @@ void loop() {
         standbyScreen();
       }
     }
-  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false && enableState == 1) {
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false && enableState == 1 && waitingForUnblock == false) {
     lastButtonState = true;
     altScreen();
-  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && enableState == 1) {
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
     
-  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && enableState == 1) {
+  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
     lastButtonState = false;
     standbyScreen();
   } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
@@ -556,12 +556,7 @@ void handleCreditReponse(int httpCode, String message) {
   }
 }
 void handleBlocked(bool force, String uid) {
-  if (uid == "enable" && sys_callbackOnBlockedTap == true) {
-    blockState = 1;
-    handleBootUpReader();
-    waitingForUnblock = true;
-    delay(15000);
-  } else if (uid != "" && sys_callbackOnBlockedTap == true) {
+  if (uid != "" && sys_callbackOnBlockedTap == true) {
     blockState = 1;
     HTTPClient http;
     String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid;
@@ -578,7 +573,6 @@ void handleBlocked(bool force, String uid) {
   } else if (waitingForUnblock == true && digitalRead(BLOCK_PIN) == HIGH) {
     blockState = 1;
   } else if (sys_callbackOnBlockedTap == true) {
-    blockState = 1;
     handleAltStandby();
   } else if (blockState == 0 || force == true) {
     blockState = 1;
