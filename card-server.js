@@ -1158,7 +1158,7 @@ app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) =>
             if (db.machines[req.params.machine_id] === undefined) {
                 db.machines[req.params.machine_id] = {};
             }
-            if (req.params.api_endpoint !== null) {
+            if (req.params.api_endpoint === null) {
                 delete db.machines[req.params.machine_id].blocked_callback;
                 delete db.machines[req.params.machine_id].has_blocked_callback;
             } else {
