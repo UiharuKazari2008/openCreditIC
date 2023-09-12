@@ -66,7 +66,7 @@ void setup() {
       standbyScreen();
     } else {
       blockOverride = 0;
-      handleBlocked(true, false);
+      handleBlocked(true, "");
     }
     enableState = 1;
     Serial.print("Set coin blocker overide: ");
@@ -89,7 +89,7 @@ void setup() {
     if (blockState = 0) {
       standbyScreen();
     } else {
-      handleBlocked(true, true);
+      handleBlocked(true, "enable");
     }
     enableState = 1;
     server.send(200, "text/plain", "OK");
@@ -113,7 +113,9 @@ void setup() {
 void loop() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-      handleBlocked(false, true);
+      String uid = getUID();
+      Serial.print("Card Detected: ");
+      handleBlocked(false, uid);
     } else if (blockState == 1) {
       handleUnblocking();
     } else if (enableState == 1) {
@@ -158,7 +160,7 @@ void loop() {
     lastButtonState = false;
     standbyScreen();
   } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
-    handleBlocked(false, false);
+    handleBlocked(false, "");
   } else if (digitalRead(BLOCK_PIN) == LOW && blockState == 1) {
     handleUnblocking();
   }
@@ -226,7 +228,7 @@ void getConfig() {
     sys_currency_rate = (sys_currency_mode == true) ? doc["currency_rate"] : 0;
     sys_jpn = doc["japanese"];
     sys_button_remote_action = doc["button_callback"];
-    sys_sys_callbackOnBlockedTap = doc["has_blocked_callback"];
+    sys_callbackOnBlockedTap = doc["has_blocked_callback"];
   }
 }
 void bootScreen(String input_message) {
@@ -311,7 +313,7 @@ void altScreen() {
 }
 void standbyScreen() {
   if (waitingForUnblock == true) {
-    handleBlocked(false, false);
+    handleBlocked(false, "");
   } else if (blockState == 0 || blockOverride == 1) {
     setLEDs(CRGB::Yellow);
     u8g2.setPowerSave(0);
@@ -529,10 +531,14 @@ void handleCreditReponse(int httpCode, String message) {
     delay(2500);
   }
 }
-void handleBlocked(bool force, bool card_scanned) {
-  if ((card_scanned == true && sys_callbackOnBlockedTap == true) || waitingForUnblock == true) {
+void handleBlocked(bool force, String uid) {
+  if (uid == "enable" && sys_callbackOnBlockedTap == true) {
+    handleBootUpReader();
+    waitingForUnblock = true;
+    delay(15000);
+  } else if ((uid != "" && sys_callbackOnBlockedTap == true) || waitingForUnblock == true) {
     HTTPClient http;
-    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress();
+    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid;
     Serial.println("Sending GET request to: " + url);
     http.begin(url);
     int httpCode = http.GET();
@@ -543,6 +549,21 @@ void handleBlocked(bool force, bool card_scanned) {
       waitingForUnblock = true;
       delay(15000);
     }
+  } else if (sys_callbackOnBlockedTap == true) {
+    u8g2.setContrast(1);
+    u8g2.clearBuffer();
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    const char* string = (sys_jpn == true) ? "省エネモード" : "Energy Saving";
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
+    int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+    u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_ecology_t);
+    int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+    u8g2.drawGlyph(centerGlX, centerGlY, 58);
+    u8g2.setDrawColor(1);
+    u8g2.sendBuffer();
   } else if (blockState == 0 || force == true) {
     blockState = 1;
     setLEDs(CRGB::Black);

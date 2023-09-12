@@ -658,11 +658,15 @@ app.get('/callback/:machine_id/:card', (req, res) => {
         res.status(500).end();
     }
 })
-app.get('/blocked_callback/:machine_id', (req, res) => {
+app.get('/blocked_callback/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.machines[req.params.machine_id] !== undefined &&
-                db.machines[req.params.machine_id].blocked_callback !== undefined) {
+                db.machines[req.params.machine_id].blocked_callback !== undefined &&
+                db.cards[req.params.card] !== undefined &&
+                !db.cards[req.params.card].locked &&
+                db.users[db.cards[req.params.card].user] !== undefined &&
+                !db.users[db.cards[req.params.card].user].locked) {
                 request.get({
                     url: db.machines[req.params.machine_id].blocked_callback,
                 }, async function (err, res, body) {
