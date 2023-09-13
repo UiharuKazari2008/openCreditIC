@@ -22,6 +22,7 @@ if (!fs.existsSync('./history.json')) {
     }), null, 2);
 }
 let history = require('./history.json');
+let pendingTimeout;
 let pendingScan = null;
 
 let saveTimeout
@@ -282,6 +283,8 @@ app.get('/deposit/scan/:credits', (req, res) => {
                     value: parseFloat(req.params.credits)
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
             console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
         } catch (e) {
@@ -719,6 +722,7 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
 app.get('/cancel_pending', (req, res) => {
     console.log("Cancelling pending");
     pendingScan = null;
+    clearTimeout(pendingTimeout);
     res.status(200).send("No pending scan requests");
 })
 // Register new User
@@ -744,6 +748,8 @@ app.get('/register/scan', (req, res) => {
                     locked: false
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             console.log(`New Pending Card for ${userId}`, pendingScan)
             res.status(200).send(`Waiting for card to be scanned for ${userId}`);
         } catch (e) {
@@ -786,6 +792,8 @@ app.get('/register/scan/:user', (req, res) => {
                     locked: false
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             console.log(`New Pending Card for ${req.params.user}`, pendingScan)
             res.status(200).send(`Waiting for card to be scanned for ${req.params.user}`);
         } catch (e) {
@@ -876,6 +884,8 @@ app.get('/delete/scan/user', (req, res) => {
 
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             console.log(`New Pending Account Deletion`)
             res.status(200).send(`Waiting for card to be scanned for user delete operation`);
         } catch (e) {
@@ -937,6 +947,8 @@ app.get('/reassign/scan', (req, res) => {
 
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             console.log(`New Pending Card Transfer`)
             res.status(200).send(`Waiting for card to be scanned for card transfer operation`);
         } catch (e) {
@@ -956,6 +968,8 @@ app.get('/delete/scan/card', (req, res) => {
 
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             console.log(`New Pending Card Deletion`)
             res.status(200).send(`Waiting for card to be scanned for card delete operation`);
         } catch (e) {
@@ -1036,6 +1050,8 @@ app.get('/scan/freeplay', (req, res) => {
                     time: null
                 }
             }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to enable freeplay`);
             console.log(`Pending Card Freeplay`);
         } catch (e) {
