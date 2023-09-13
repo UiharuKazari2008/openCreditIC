@@ -14,14 +14,14 @@
 #define BUTTON_PIN 5 // Button used for front panel button
 #define LED_PIN   12 // Define the pin connected to the WS2812 LED strip.
 #define NUM_LEDS  1  // Define the number of LEDs in the strip.
+const char *ssid = "Radio Noise AX";
+const char *password = "Radio Noise AX";
+const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
-const char *ssid = "Radio Noise AX";
-const char *password = "Radio Noise AX";
 WebServer server(80);
-const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
 int enableState = 0;
 int testReader = 0;
 int blockState = 0;
@@ -158,7 +158,7 @@ void loop() {
     lastButtonState = true;
     altScreen();
   } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
-    
+
   } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
     lastButtonState = false;
     standbyScreen();
@@ -244,7 +244,7 @@ void bootScreen(String input_message) {
   int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
   int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawStr(centerX, centerY, string);
-  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);  
+  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 64);
   u8g2.setFont(u8g2_font_HelvetiPixel_tr);

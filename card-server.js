@@ -1080,28 +1080,7 @@ app.get('/disable_freeplay/user', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/revoke/:user/', (req, res) => {
-    if (db.cards && db.users) {
-        try {
-            if (db.users[req.params.user] !== undefined) {
-                db.users[req.params.user] = null;
-                delete db.users[req.params.user];
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`User Revoked: ${req.params.user}`)
-                res.status(200).send(`User Revoked: ${req.params.user}`);
-            } else {
-                console.error(`User not found: ${req.params.user}`)
-                res.status(400).send("Card Already Exists!");
-            }
-        } catch (e) {
-            console.error("Failed to read cards database", e)
-            res.status(500).send("Internal System Error");
-        }
-    } else {
-        res.status(500).end();
-    }
-});
+
 // Machine Management
 app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
     if (db.cards && db.users) {
@@ -1285,7 +1264,7 @@ app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
         res.status(500).end();
     }
 });
-app.get('/revoke/machine/:machine_id', (req, res) => {
+app.get('/delete/machine/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
             db.machines[(req.params.machine_id).toUpperCase()] = null;
