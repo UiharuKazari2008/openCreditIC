@@ -13,7 +13,7 @@
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-user-cog
                         span Customer Info
-                if (card.locked)
+                if (locked)
                     a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-lock-open
