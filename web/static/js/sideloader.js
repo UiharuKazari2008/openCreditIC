@@ -4,6 +4,7 @@ function cancelRequest() {
         type: "GET", data: '',
         processData: false,
         contentType: false,
+        cache: false,
         url: `/cancel_pending/${machineID}`,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
@@ -63,6 +64,7 @@ function registerUser() {
         url, data: '',
         processData: false,
         contentType: false,
+        cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 if (createUser || createCard) {
@@ -127,6 +129,7 @@ function depositCredits() {
         url, data: '',
         processData: false,
         contentType: false,
+        cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 if (userID || cardID) {
@@ -220,6 +223,7 @@ function transferCard() {
         url, data: '',
         processData: false,
         contentType: false,
+        cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("show");
@@ -254,6 +258,7 @@ function clearAllFreeplay() {
         url, data: '',
         processData: false,
         contentType: false,
+        cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 alert(res)
