@@ -1,5 +1,6 @@
 {
- "name": "App",
+ "name": "OCI",
+ "display": "standalone",
  "icons": [
   {
    "src": "\/android-icon-36x36.png",
