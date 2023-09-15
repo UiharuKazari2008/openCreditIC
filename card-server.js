@@ -1578,7 +1578,7 @@ app.get('/delete/machine/:machine_id', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-app.get('/get/machine/:machine_id', manageAuth, (req, res) => {
+app.get('/get/machine/:machine_id', readerAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {

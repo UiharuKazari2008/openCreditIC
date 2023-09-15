@@ -17,6 +17,7 @@
 const char *ssid = "Radio Noise AX";
 const char *password = "Radio Noise AX";
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
+const char *deviceKey = "";
 
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
@@ -127,7 +128,7 @@ void loop() {
       handleStartComm(uid);
 
       HTTPClient http;
-      String url = String(apiUrl) + "dispense/" + WiFi.macAddress() + "/" + uid;
+      String url = String(apiUrl) + "withdraw/" + WiFi.macAddress() + "/" + uid + "?key=" + deviceKey;
       Serial.println("Sending GET request to: " + url);
       http.begin(url);
       int httpCode = http.GET();
@@ -214,7 +215,7 @@ void checkWiFiConnection() {
 }
 void getConfig() {
   HTTPClient http;
-  String url = String(apiUrl) + "get/machine/" + WiFi.macAddress();
+  String url = String(apiUrl) + "get/machine/" + WiFi.macAddress() + "?key=" + deviceKey;
   Serial.println("Sending GET request to: " + url);
   http.begin(url);
   int httpCode = http.GET();
@@ -559,7 +560,7 @@ void handleBlocked(bool force, String uid) {
   if (uid != "" && sys_callbackOnBlockedTap == true) {
     blockState = 1;
     HTTPClient http;
-    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid;
+    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid + "?key=" + deviceKey;
     Serial.println("Sending GET request to: " + url);
     http.begin(url);
     int httpCode = http.GET();

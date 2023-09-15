@@ -22,6 +22,7 @@ const char *ssid = "Radio Noise AX";
 const char *password = "Radio Noise AX";
 WebServer server(80);
 const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
+const char *deviceKey = "";
 bool sys_jpn = false;
 bool sys_currency_mode = false;
 float sys_currency_rate = 1;
@@ -56,7 +57,7 @@ void loop() {
     handleStartComm(uid);
 
     HTTPClient http;
-    String url = String(apiUrl) + "callback/" + WiFi.macAddress() + "/" + uid;
+    String url = String(apiUrl) + "callback/" + WiFi.macAddress() + "/" + uid + "?key=" + deviceKey;
     Serial.println("Sending GET request to: " + url);
     http.begin(url);
     int httpCode = http.GET();
@@ -126,7 +127,7 @@ void checkWiFiConnection() {
 }
 void getConfig() {
   HTTPClient http;
-  String url = String(apiUrl) + "get/machine/" + WiFi.macAddress();
+  String url = String(apiUrl) + "get/machine/" + WiFi.macAddress() + "?key=" + deviceKey;
   Serial.println("Sending GET request to: " + url);
   http.begin(url);
   int httpCode = http.GET();
@@ -152,7 +153,7 @@ void bootScreen(String input_message) {
   int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
   int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawStr(centerX, centerY, string);
-  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);  
+  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
   int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
   u8g2.drawGlyph(centerGlX, centerGlY, 64);
   u8g2.setFont(u8g2_font_HelvetiPixel_tr);
@@ -167,7 +168,7 @@ void standbyScreen() {
   u8g2.setPowerSave(0);
   u8g2.setContrast(1);
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, 263);
@@ -182,7 +183,7 @@ void handleStartComm(String uid) {
   setLEDs(CRGB::Black);
   u8g2.setContrast(1);
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, 84);
@@ -202,7 +203,7 @@ void handleInvalidCard(int httpCode, String uid) {
   u8g2.sendBuffer();
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, 121);
@@ -264,7 +265,7 @@ void handleAddedCreditsReponse(String message) {
     int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
     u8g2.drawStr(centerX, centerY, string);
 
-    u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);  
+    u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
     int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
     u8g2.drawGlyph(centerGlX, centerGlY, (jpn == true) ? 284 : 147);
   } else {
@@ -277,7 +278,7 @@ void handleAddedCreditsReponse(String message) {
     int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
     u8g2.drawStr(centerX, centerY, string);
   }
-  
+
   String textBottom = (sys_jpn == true) ? "ウォレット残高" : "Wallet Balance";
   u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
   int messageWidth = u8g2.getUTF8Width(textBottom.c_str());
@@ -300,8 +301,8 @@ void handleRegisterReponse(int httpCode, String message) {
 
   u8g2.clearBuffer();
   setLEDs(CRGB::Cyan);
-  
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);  
+
+  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
   int centerGlX = (u8g2.getWidth() - 32) / 2;
   int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
   u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 215) ? 81 : 120);
