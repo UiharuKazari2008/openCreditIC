@@ -96,6 +96,78 @@ function registerUser() {
     });
     return false
 }
+function updateUserData() {
+    let request = new URLSearchParams();
+    const showUserID = document.getElementById('showUserID').value;
+    try {
+        const showFreePlayUser = document.getElementById('showFreePlayUser').checked;
+        const showUserName = document.getElementById('showUserName').value;
+        const showUserContact = document.getElementById('showUserContact').value;
+        if (showFreePlayUser)
+            request.set('free_play', showFreePlayUser.toString())
+        if (showUserName && showUserName.trim().length > 0) {
+            request.set('user_name', encodeURIComponent(showUserName.trim()));
+        }
+        if (showUserContact && showUserContact.trim().length > 0) {
+            request.set('user_contact', encodeURIComponent(showUserContact.trim()));
+        }
+    } catch (e) {
+        console.error(`Failed to parse user info`, e)
+    }
+    const url = `/update/user/${showUserID}?${request.toString()}`
+    $.ajax({
+        type: "GET",
+        url, data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                clearUser();
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
+function updateCardData(card_number) {
+    let request = new URLSearchParams();
+    try {
+        const showCardName = document.getElementById('cardName' + card_number).value;
+        const showCardContact = document.getElementById('cardContact' + card_number).value;
+        if (showCardName && showCardName.trim().length > 0) {
+            request.set('card_name', encodeURIComponent(showCardName.trim()));
+        }
+        if (showCardContact && showCardContact.trim().length > 0) {
+            request.set('card_contact', encodeURIComponent(showCardContact.trim()));
+        }
+    } catch (e) {
+        console.error(`Failed to parse user info`, e)
+    }
+    const url = `/update/card/${card_number}?${request.toString()}`
+    $.ajax({
+        type: "GET",
+        url, data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                clearUser();
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function getUser() {
     const model = $('#showUserModel')
     let userId = false;

@@ -12,7 +12,7 @@
                     else
                         input#showFreePlayUser(type='checkbox' autocomplete='off')
                     i.fas.fa-circle-check
-    div.d-flex
+    div
         .form-group
             label(for='showUserID') Customer ID:
             input#showUserID.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=id, disabled)
@@ -22,7 +22,7 @@
         .form-group
             label(for='showUserContact') Contact Info:
             input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
-    div.d-flex
+    div.d-flex.mb-3
         a.btn.btn-primary.w-100(href='#' onclick='updateUserData(); return false;').d-flex.text-white.mr-2
             div.d-flex.align-items-center.justify-content-center
                 i.fas.fa-floppy-disk
@@ -38,7 +38,7 @@
                     i.fas.fa-lock
                 span.pl-2.d-none.d-sm-inline Lock
 
-        a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
+        //a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
             div.d-flex.align-items-center.justify-content-center
                 i.fas.fa-trash
             span.pl-2.d-none.d-sm-inline Delete
@@ -69,8 +69,8 @@
             .collapse(id=`cardData${card.serial}` aria-labelledby=`cardHeader${card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group
-                        label(for=`cardNumber${card.serial}`) Serial Number:
-                        input.form-control(id=`cardNumber${card.serial}`, type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
+                        label(for=`showCardNumber`) Serial Number:
+                        input.form-control(id=`showCardNumber`, type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
                     .form-group
                         label(for=`cardName${card.serial}`) Card Name:
                         input.form-control(id=`cardName${card.serial}`, type='text', name='cardName', placeholder="Friendly name for card", value=card.name)

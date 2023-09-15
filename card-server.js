@@ -973,6 +973,37 @@ app.get('/register/scan/:machine_id/:user', (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+app.get('/update/user/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                db.users[req.params.user].free_play = (req.query.free_play && req.query.free_play === 'true');
+                if (req.query.user_name && req.query.user_name.length > 0) {
+                    db.users[req.params.user].name = decodeURIComponent(req.query.user_name)
+                } else {
+                    delete db.users[req.params.user].name
+                }
+                if (req.query.user_contact && req.query.user_contact.length > 0) {
+                    db.users[req.params.user].contact = decodeURIComponent(req.query.user_contact)
+                } else {
+                    delete db.users[req.params.user].contact
+                }
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`User Account Updated ${req.params.user}`)
+                res.status(200).send(`User Account Updated ${req.params.user}`);
+            } else {
+                console.error(`User account not found ${req.params.user}`)
+                res.status(404).send(`User account not found ${req.params.user}`);
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/register/new/:user/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -1124,6 +1155,36 @@ app.get('/reassign/scan/:machine_id', (req, res) => {
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
+app.get('/update/card/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.cards[req.params.card] !== undefined) {
+                if (req.query.card_name && req.query.card_name.length > 0) {
+                    db.cards[req.params.card].name = decodeURIComponent(req.query.card_name)
+                } else {
+                    delete db.cards[req.params.card].name
+                }
+                if (req.query.card_contact && req.query.user_contact.length > 0) {
+                    db.cards[req.params.card].contact = decodeURIComponent(req.query.card_contact)
+                } else {
+                    delete db.cards[req.params.card].contact
+                }
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`Card Updated ${req.params.card}`)
+                res.status(200).send(`Card Updated ${req.params.card}`);
+            } else {
+                console.error(`Card not found ${req.params.card}`)
+                res.status(404).send(`Card not found ${req.params.card}`);
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send("Internal System Error");
         }
     } else {
         res.status(500).send('Server Error');
