@@ -73,6 +73,8 @@ function readerAuth(req, res, next) {
         } else {
             res.status(401).send("Invalid Auth Provided")
         }
+    } else {
+        next();
     }
 }
 function manageAuth(req, res, next) {
@@ -82,6 +84,8 @@ function manageAuth(req, res, next) {
         } else {
             res.status(401).send("Invalid Auth Provided")
         }
+    } else {
+        next();
     }
 }
 
@@ -96,6 +100,7 @@ app.get('/', manageAuth, (req, res) => {
     });
 });
 app.use('/static', express.static('./web/static', ));
+app.use('/ui_static', express.static('./ui_images', ));
 // Should only be called by a cabinet
 app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAuth, (req, res) => {
     if (db.cards && db.users) {

@@ -1,3 +1,50 @@
+body {
+    margin-left: calc(env(safe-area-inset-left) + 0em);
+    margin-right: calc(env(safe-area-inset-right) + 0em);
+    margin-top: calc(env(safe-area-inset-top) + 0em);
+    margin-bottom: calc(env(safe-area-inset-bottom) + 0em);
+}
+div.modal {
+    margin-left: calc(env(safe-area-inset-left) + 0em);
+    margin-right: calc(env(safe-area-inset-right) + 0em);
+    margin-top: calc(env(safe-area-inset-top) + 0em);
+    margin-bottom: calc(env(safe-area-inset-bottom) + 0em);
+}
+.background {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-attachment: fixed;
+    background-origin: padding-box;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-image: url("/ui_static/background.jpg");
+    z-index: -100;
+}
+.background-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-attachment: fixed;
+    background-origin: padding-box;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-color: #0000007a;
+    backdrop-filter: blur(10px);
+    z-index: -99;
+}
+.center-menu {
+    background: #0000007a;
+    padding: 1em;
+}
 .dropdown-toggle::after {
     display: none;
 }

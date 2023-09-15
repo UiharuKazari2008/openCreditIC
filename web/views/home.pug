@@ -40,9 +40,11 @@ head
     script(src='/static/js/bootstrap.min.js')
     script(src='/static/js/sideloader.js')
 body.bg-dark.text-white
+    div.background
+    div.background-overlay
     div.container.text-center
-        h1.mt-3 #{config.arcade_name}
-        div.btn-group-vertical.mt-5.col-lg-7
+        h1.mt-5 #{config.arcade_name}
+        div.btn-group-vertical.mt-5.col-lg-7.rounded.center-menu
             div.w-100
                 .form-group
                     select#posTerminal.form-control.form-control-lg(name='posTerminal')
@@ -60,12 +62,12 @@ body.bg-dark.text-white
                             i.fas.fa-coins
                         span Deposit
             div.btn-group.btn-group-lg.mt-2
-                a.btn.btn-info.rounded-left(href='/history')
+                a.btn.btn-info.rounded-left.col(href='/history')
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-list-alt
                         span Bookkeeping
-                button.btn.dropdown-toggle.btn-warning.rounded-right(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+                button.btn.dropdown-toggle.btn-warning.rounded-right.col-sm-3.col-5(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-cog
@@ -220,7 +222,7 @@ body.bg-dark.text-white
             div.modal-content
                 div.modal-body.align-items-center.d-flex.flex-column.text-white.bg-danger
                     div.d-flex.flex-row
-                        i.fas.fa-5x.fa-credit-card
+                        i.fab.fa-5x.fa-nfc-symbol
                     div.d-flex.flex-row.mt-2
                         span Scan card now!
                     div.d-flex
