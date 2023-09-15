@@ -251,6 +251,42 @@ function transferCard() {
     });
     return false
 }
+function cardAction(url) {
+    let machineID = document.getElementById('posTerminal').value;
+    $.ajax({
+        type: "GET",
+        url: url + '/' + machineID,
+        data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                $("#waitForCardScanModal").modal("show");
+                $.ajax({
+                    type: "GET",
+                    url: `/wait_pending/${machineID}`,
+                    timeout: 60000, data: '',
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        $("#waitForCardScanModal").modal("hide");
+                        clearDepositCredits();
+                    },
+                    error: function () {
+                        alert(`Request Timeout`);
+                    },
+                });
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function clearAllFreeplay() {
     const url = `/disable_freeplay/user`
     $.ajax({
@@ -272,6 +308,7 @@ function clearAllFreeplay() {
     });
     return false
 }
+
 function clearRegisterUser() {
     $("#newCardModal").modal("hide");
     $("#waitForCardScanModal").modal("hide");
@@ -283,7 +320,6 @@ function clearRegisterUser() {
     document.getElementById('cardName').value = '';
     document.getElementById('cardContact').value = '';
 }
-
 function clearDepositCredits() {
     $("#depositModal").modal("hide");
     $("#waitForCardScanModal").modal("hide");

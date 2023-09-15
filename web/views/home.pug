@@ -46,6 +46,8 @@ body.bg-dark.text-white
                     a.dropdown-item(href='#').disabled Update Customer
                     a.dropdown-item(href='#' onclick='transferCard(); return false;') Card Transfer
                     a.dropdown-item(href='#').disabled Add Additional Card
+                    a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/card"); return false;') Delete Card
+                    a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/user"); return false;') Delete User
                     .dropdown-header Arcade Management
                     .dropdown-divider
                     a.dropdown-item(href='#').disabled Free Play Settings
