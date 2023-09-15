@@ -490,7 +490,7 @@ function addCardToUser() {
 function setFreeplay(url, machine_id) {
     $.ajax({
         type: "GET",
-        url: url + ((machine_id) ? machine_id : '') + '/' + ((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'enable' : 'disable'),
+        url: url + ((machine_id) ? machine_id + '/' : '') + ((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'disable' : 'enable'),
         data: '',
         processData: false,
         contentType: false,
