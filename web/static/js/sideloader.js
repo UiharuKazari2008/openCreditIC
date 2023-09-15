@@ -1,7 +1,9 @@
 function cancelRequest() {
     let machineID = document.getElementById('posTerminal').value;
     $.ajax({
-        type: "GET",
+        type: "GET", data: '',
+        processData: false,
+        contentType: false,
         url: `/cancel_pending/${machineID}`,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
@@ -58,7 +60,9 @@ function registerUser() {
     const url = `/register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}?${request.toString()}`
     $.ajax({
         type: "GET",
-        url,
+        url, data: '',
+        processData: false,
+        contentType: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 if (createUser || createCard) {
@@ -68,7 +72,9 @@ function registerUser() {
                     $.ajax({
                         type: "GET",
                         url: `/wait_pending/${machineID}`,
-                        timeout: 60000,
+                        timeout: 60000, data: '',
+                        processData: false,
+                        contentType: false,
                         success: function () {
                             $("#waitForCardScanModal").modal("hide");
                             clearRegisterUser();
@@ -118,7 +124,9 @@ function depositCredits() {
     const url = `/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}`
     $.ajax({
         type: "GET",
-        url,
+        url, data: '',
+        processData: false,
+        contentType: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 if (userID || cardID) {
@@ -128,7 +136,9 @@ function depositCredits() {
                     $.ajax({
                         type: "GET",
                         url: `/wait_pending/${machineID}`,
-                        timeout: 60000,
+                        timeout: 60000, data: '',
+                        processData: false,
+                        contentType: false,
                         success: function () {
                             $("#waitForCardScanModal").modal("hide");
                             clearDepositCredits();
@@ -180,7 +190,9 @@ function freePlayUser() {
                     $.ajax({
                         type: "GET",
                         url: `/wait_pending/${machineID}`,
-                        timeout: 60000,
+                        timeout: 60000, data: '',
+                        processData: false,
+                        contentType: false,
                         success: function () {
                             $("#waitForCardScanModal").modal("hide");
                             clearDepositCredits();
@@ -205,14 +217,18 @@ function transferCard() {
     const url = `/reassign/scan/${machineID}`
     $.ajax({
         type: "GET",
-        url,
+        url, data: '',
+        processData: false,
+        contentType: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("show");
                 $.ajax({
                     type: "GET",
                     url: `/wait_pending/${machineID}`,
-                    timeout: 60000,
+                    timeout: 60000, data: '',
+                    processData: false,
+                    contentType: false,
                     success: function () {
                         $("#waitForCardScanModal").modal("hide");
                         clearDepositCredits();
@@ -235,7 +251,9 @@ function clearAllFreeplay() {
     const url = `/disable_freeplay/user`
     $.ajax({
         type: "GET",
-        url,
+        url, data: '',
+        processData: false,
+        contentType: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 alert(res)
