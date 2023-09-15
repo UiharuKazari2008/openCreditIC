@@ -23,7 +23,7 @@ head
     script(src='/static/js/sideloader.js')
 body.bg-dark.text-white
     div.container.text-center
-        h1 openCreditIC Manager
+        h1.mt-3 #{config.arcade_name}
         div.btn-group-vertical.mt-5.col-lg-7
             div.w-100
                 .form-group
@@ -161,7 +161,7 @@ body.bg-dark.text-white
 
                 div.modal-footer
                     button.btn.btn-danger.mr-auto(type='button' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
-                    button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Close
+                    button.btn.btn-secondary(type='button' data-dismiss='modal') Close
     div.modal#depositModal(tabindex='-1' role='dialog')
         div.modal-dialog.text-dark
             div.modal-content
