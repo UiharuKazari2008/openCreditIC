@@ -76,6 +76,6 @@
                         input.form-control(id=`cardName${card.serial}`, type='text', name='cardName', placeholder="Friendly name for card", value=card.name)
                     .form-group
                         label(for=`cardContact${card.serial}`) Contact Info:
-                        input.form-control(id=`cardcontact${card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
+                        input.form-control(id=`cardContact${card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
 
                     button.btn.btn-primary.w-100(type='submit' onclick=`updateCardData("${card.serial}"); return false;`) Update
