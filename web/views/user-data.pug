@@ -14,15 +14,15 @@
                             i.fas.fa-user-cog
                         span Customer Info
                 if (locked)
-                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
-                        div.d-flex.align-items-center.justify-content-center.pr-2
+                    a.btn.bg-secondary(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-dark.mr-2
+                        div.d-flex.align-items-center.justify-content-center
                             i.fas.fa-lock-open
-                        span Unlock
+                        span.pl-2.d-none.d-inline Unlock
                 else
-                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/enable")`).d-flex.text-white.mr-2
-                        div.d-flex.align-items-center.justify-content-center.pr-2
+                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/enable")`).d-flex.text-dark.mr-2
+                        div.d-flex.align-items-center.justify-content-center
                             i.fas.fa-lock
-                        span Lock
+                        span.pl-2.d-none.d-inline Lock
 
         #collapseUserInfoShow.collapse.show(aria-labelledby='headerUserInfoShow' data-parent='#showUserAccordion')
             .card-body
@@ -44,23 +44,23 @@
                 h5.mb-0.d-flex
                     button.p-0.btn.btn-link.collapsed.mr-auto(data-toggle='collapse' data-target=`#cardData${card.serial}` aria-expanded='false' aria-controls=`cardData${card.serial}`)
                         div.d-flex.justify-content-center.mr-auto
-                            div.d-flex.align-items-center.justify-content-center.pr-2
+                            div.d-flex.align-items-center.justify-content-center
                                 i.fas.fa-credit-card
-                            span Card Info (#{card.serial})
+                            span.pl-2.d-none.d-inline Card Info (#{card.serial})
                     if (card.locked)
-                        a.btn.bg-warning(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/disable")`).d-flex.text-white.mr-2
-                            div.d-flex.align-items-center.justify-content-center.pr-2
+                        a.btn.bg-secondary(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/disable")`).d-flex.text-white.mr-2
+                            div.d-flex.align-items-center.justify-content-center
                                 i.fas.fa-lock-open
-                            span Unlock
+                            span.pl-2.d-none.d-inline Unlock
                     else
                         a.btn.bg-warning(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/enable")`).d-flex.text-white.mr-2
-                            div.d-flex.align-items-center.justify-content-center.pr-2
+                            div.d-flex.align-items-center.justify-content-center
                                 i.fas.fa-lock
-                            span Lock
+                            span.pl-2.d-none.d-inline Lock
                     a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
-                        div.d-flex.align-items-center.justify-content-center.pr-2
+                        div.d-flex.align-items-center.justify-content-center
                             i.fas.fa-trash
-                        span Delete
+                        span.pl-2.d-none.d-inline Delete
             .collapse(id=`cardData${card.serial}` aria-labelledby=`cardHeader${card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group
