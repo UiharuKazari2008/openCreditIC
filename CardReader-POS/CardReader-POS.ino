@@ -19,11 +19,7 @@
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
-const char *ssid = "Radio Noise AX";
-const char *password = "Radio Noise AX";
 WebServer server(80);
-const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
-const char *deviceKey = "";
 bool sys_jpn = false;
 bool sys_currency_mode = false;
 float sys_currency_rate = 1;
