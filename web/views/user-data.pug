@@ -3,14 +3,14 @@
         label(for='walletBalance') Wallet Balance:
         input#walletBalance.form-control.form-control-lg(type='number', name='initialBalance', disabled, placeholder="0 Credits", value=credits)
     .card
-        #headerUserInfo.card-header
+        #headerUserInfoShow.card-header
             h5.mb-0
-                button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseUserInfo' aria-expanded='true' aria-controls='collapseUserInfo')
+                button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseUserInfoShow' aria-expanded='true' aria-controls='collapseUserInfoShow')
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-user-cog
                         span Customer Info
-        #collapseUserInfo.collapse.show(aria-labelledby='headerUserInfo' data-parent='#showUserAccordion')
+        #collapseUserInfoShow.collapse.show(aria-labelledby='headerUserInfoShow' data-parent='#showUserAccordion')
             .card-body
                 .form-group
                     label(for='userID') Customer ID:
