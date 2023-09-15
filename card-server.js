@@ -806,7 +806,7 @@ app.get('/wait_data/:machine_id', async (req, res) => {
         while (i <= 31) {
             await sleep(1000).then(() => {
                 console.log(`Waiting for response...`)
-                if (!(pendingResponse[(req.params.machine_id).toUpperCase()])) {
+                if (pendingResponse[(req.params.machine_id).toUpperCase()]) {
                     res.status(200).json(pendingResponse[(req.params.machine_id).toUpperCase()]);
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
