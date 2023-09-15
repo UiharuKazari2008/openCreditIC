@@ -4,8 +4,8 @@
             label(for='showWalletBalance') Wallet Balance:
             input#showWalletBalance.form-control(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
         .form-group.p-0.pl-3
-            label(for='showFreePlayUser')
-            .btn-group-toggle(data-toggle='buttons') Free Play
+            label(for='showFreePlayUser') Free Play
+            .btn-group-toggle(data-toggle='buttons')
                 label.btn.btn-success.freeplay(class=`${(free_play) ? 'active' : ''}`)
                     if (free_play)
                         input#showFreePlayUser(type='checkbox' checked='' autocomplete='off')
