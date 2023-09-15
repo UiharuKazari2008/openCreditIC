@@ -1,3 +1,14 @@
 .dropdown-toggle::after {
     display: none;
 }
+
+.freeplay {
+    color: #c3c3c3;
+    background-color: #545b62;
+    border-color: #343a40;
+}
+.active.freeplay {
+    color: white;
+    background-color: #1e7e34;
+    border-color: #1c7430;
+}
