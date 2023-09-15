@@ -30,10 +30,10 @@
                             div.d-flex.align-items-center.justify-content-center.pr-2
                                 i.fas.fa-credit-card
                             span Card Info (#{card.serial})
-                            a.btn.bg-danger(href="#" onclick=`deleteCard("${card.serial}")`)
-                                div.d-flex.align-items-center.justify-content-center.pr-2
-                                    i.fas.fa-trash
-                                span Delete
+                    a.btn.bg-danger(href="#" onclick=`deleteCard("${card.serial}")`)
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-trash
+                        span Delete
             .collapse(id=`cardData#{card.serial}` aria-labelledby=`cardHeader#{card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group
