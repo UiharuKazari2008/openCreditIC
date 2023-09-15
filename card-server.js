@@ -68,23 +68,22 @@ function callVFDCenter(machine, line1) {
 
 function readerAuth(req, res, next) {
     if (config.device_key) {
-        if (!req.query.key)
-            res.status(401).send("No Auth Provided")
-        if (req.query.key && req.query.key !== config.device_key)
+        if (req.query.key && req.query.key === config.device_key) {
+            next();
+        } else {
             res.status(401).send("Invalid Auth Provided")
+        }
     }
-    next();
 }
 function manageAuth(req, res, next) {
     if (config.web_key) {
-        if (!req.query.key)
-            res.status(401).send("No Auth Provided")
-        if (req.query.key && req.query.key !== config.web_key)
+        if (req.query.key && req.query.key === config.web_key) {
+            next();
+        } else {
             res.status(401).send("Invalid Auth Provided")
+        }
     }
-    next();
 }
-
 
 app.set('view engine', 'pug');
 app.set('views', './web/views');
