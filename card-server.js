@@ -1169,7 +1169,7 @@ app.get('/update/card/:card', (req, res) => {
                 } else {
                     delete db.cards[req.params.card].name
                 }
-                if (req.query.card_contact && req.query.user_contact.length > 0) {
+                if (req.query.card_contact && req.query.card_contact.length > 0) {
                     db.cards[req.params.card].contact = decodeURIComponent(req.query.card_contact)
                 } else {
                     delete db.cards[req.params.card].contact
