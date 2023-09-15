@@ -44,7 +44,6 @@ body.bg-dark.text-white
                     .dropdown-divider
                     a.dropdown-item(href='#', data-toggle='modal', data-target='#findUserModal') Get/Update Customer
                     a.dropdown-item(href='#' onclick='transferCard(); return false;') Card Transfer
-                    a.dropdown-item(href='#').disabled Add Additional Card
                     a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/card"); return false;') Delete Card
                     a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/user"); return false;') Delete User
                     .dropdown-header Arcade Management
@@ -135,8 +134,10 @@ body.bg-dark.text-white
                 div#userDataDiv.modal-body
 
                 div.modal-footer
-                    button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
-                    button.btn.btn-primary(type='submit' onclick='updateUser(); return false;') Update
+                    button.btn.btn-secondary(type='button' onclick='addCardToUser(); return false;').mr-auto
+                        i.fas.fa-plus.pr-2
+                        span Card
+                    button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Close
     div.modal#depositModal(tabindex='-1' role='dialog')
         div.modal-dialog.text-dark
             div.modal-content

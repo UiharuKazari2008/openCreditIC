@@ -13,35 +13,39 @@
         #collapseUserInfoShow.collapse.show(aria-labelledby='headerUserInfoShow' data-parent='#showUserAccordion')
             .card-body
                 .form-group
-                    label(for='userID') Customer ID:
-                    input#userID.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=id, disabled)
+                    label(for='showUserID') Customer ID:
+                    input#showUserID.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=id, disabled)
                 .form-group
-                    label(for='userName') Customer Name:
-                    input#userName.form-control(type='text', name='cardName', placeholder="Customer Name", value=name)
+                    label(for='showUserName') Customer Name:
+                    input#showUserName.form-control(type='text', name='cardName', placeholder="Customer Name", value=name)
                 .form-group
-                    label(for='userContact') Contact Info:
-                    input#userContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
+                    label(for='showUserContact') Contact Info:
+                    input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
+
+                button.btn.btn-primary(type='submit' onclick='updateUserData(); return false;') Update
     for card in cards
         .card
             .card-header(id=`cardHeader#{card.serial}`)
-                h5.mb-0
+                h5.mb-0.d-flex
                     button.p-0.btn.btn-link.collapsed(data-toggle='collapse' data-target=`#cardData#{card.serial}` aria-expanded='false' aria-controls=`cardData#{card.serial}`)
-                        div.d-flex.justify-content-center
+                        div.d-flex.justify-content-center.mr-auto
                             div.d-flex.align-items-center.justify-content-center.pr-2
                                 i.fas.fa-credit-card
                             span Card Info (#{card.serial})
-                    a.btn.bg-danger(href="#" onclick=`deleteCard("${card.serial}")`)
+                    a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-trash
                         span Delete
             .collapse(id=`cardData#{card.serial}` aria-labelledby=`cardHeader#{card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group
-                        label(for='cardName') Serial Number:
-                        input#cardNum.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
+                        label(for=`cardNumber#{card.serial}`) Serial Number:
+                        input.form-control(id=`cardNumber#{card.serial}`, type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
                     .form-group
-                        label(for='cardName') Card Name:
-                        input#cardName.form-control(type='text', name='cardName', placeholder="Friendly name for card", value=card.name)
+                        label(for=`cardName#{card.serial}`) Card Name:
+                        input.form-control(id=`cardName#{card.serial}`, type='text', name='cardName', placeholder="Friendly name for card", value=card.name)
                     .form-group
-                        label(for='cardName') Contact Info:
-                        input#cardContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
+                        label(for=`cardContact#{card.serial}`) Contact Info:
+                        input.form-control(id=`cardcontact#{card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
+
+                    button.btn.btn-primary(type='submit' onclick='updateCardData("#{card.serial}"); return false;') Update

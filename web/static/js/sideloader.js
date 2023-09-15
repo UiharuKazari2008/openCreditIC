@@ -352,6 +352,68 @@ function cardAction(url) {
     });
     return false
 }
+function addCardToUser() {
+    let machineID = document.getElementById('posTerminal').value;
+    if (document.getElementById('showUserID') !== undefined) {
+        const userID = document.getElementById('showUserID').value;
+        $.ajax({
+            type: "GET",
+            url: '/register/scan/' + machineID + '/' + userID,
+            data: '',
+            processData: false,
+            contentType: false,
+            cache: false,
+            success: function (res, txt, xhr) {
+                if (xhr.status === 200) {
+                    $("#waitForCardScanModal").modal("show");
+                    $.ajax({
+                        type: "GET",
+                        url: `/wait_pending/${machineID}`,
+                        timeout: 60000, data: '',
+                        processData: false,
+                        contentType: false,
+                        success: function () {
+                            $("#waitForCardScanModal").modal("hide");
+                            clearUser();
+                        },
+                        error: function () {
+                            alert(`Request Timeout`);
+                        },
+                    });
+                } else {
+                    alert(res)
+                }
+            },
+            error: function (xhr) {
+                alert(`Failure: ${xhr.responseText}`)
+            },
+        });
+    } else {
+        alert("No User ID found")
+    }
+    return false
+}
+function generalAction(url) {
+    $.ajax({
+        type: "GET",
+        url,
+        data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                alert(res)
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function clearAllFreeplay() {
     const url = `/disable_freeplay/user`
     $.ajax({
