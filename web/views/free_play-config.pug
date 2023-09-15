@@ -4,9 +4,9 @@
         .btn-group-toggle(data-toggle='buttons')
             label.btn.btn-lg.w-100.freeplay(class=`${(arcade) ? 'active' : ''}`)
                 if (arcade)
-                    input#showFreePlayGlobal(type='checkbox' checked='' autocomplete='off')
+                    input#showFreePlayGlobal(type='checkbox' checked='' autocomplete='off' onclick='generalAction("/set/arcade/freeplay/disable"); return false;')
                 else
-                    input#showFreePlayGlobal(type='checkbox' autocomplete='off')
+                    input#showFreePlayGlobal(type='checkbox' autocomplete='off' onclick='generalAction("/set/arcade/freeplay/enable"); return false;')
                 i.fas.fa-circle-check
     for machine in machines
         .form-group
@@ -14,7 +14,7 @@
             .btn-group-toggle(data-toggle='buttons')
                 label.btn.btn-lg.w-100.freeplay(class=`${(machine.free_play) ? 'active' : ''}`)
                     if (machine.free_play)
-                        input(id=`showFreePlay${machine.id}` type='checkbox' checked='' autocomplete='off')
+                        input(id=`showFreePlay${machine.id}` type='checkbox' checked='' autocomplete='off' onclick=`generalAction("/set/machine/freeplay/${machine.id}/disable"); return false;`)
                     else
-                        input(id=`showFreePlay${machine.id}` type='checkbox' autocomplete='off')
+                        input(id=`showFreePlay${machine.id}` type='checkbox' autocomplete='off' onclick=`generalAction("/set/machine/freeplay/${machine.id}/enable"); return false;`)
                     i.fas.fa-circle-check
