@@ -1148,7 +1148,7 @@ app.get('/create/pos/:machine_id', (req, res) => {
             db.machines[(req.params.machine_id).toUpperCase()].pos_mode = true;
             if (req.query.name && req.query.name.length > 0)
                 db.machines[(req.params.machine_id).toUpperCase()].name = req.query.name;
-            if (req.query.name && req.query.location.length > 0)
+            if (req.query.location && req.query.location.length > 0)
                 db.machines[(req.params.machine_id).toUpperCase()].location = req.query.location;
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
