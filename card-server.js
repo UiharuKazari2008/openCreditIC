@@ -810,7 +810,6 @@ app.get('/wait_data/:machine_id', async (req, res) => {
                     res.status(200).json(pendingResponse[(req.params.machine_id).toUpperCase()]);
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
-                    break;
                 } else if (i >= 30) {
                     res.status(500).render("Timeout Waiting for data");
                 } else {
@@ -832,7 +831,6 @@ app.get('/wait_render/:view/:machine_id', async (req, res) => {
                     res.status(200).render(req.params.view, pendingResponse[(req.params.machine_id).toUpperCase()]);
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
-                    break;
                 } else if (i >= 30) {
                     res.status(500).render("Timeout Waiting for data");
                 } else {
