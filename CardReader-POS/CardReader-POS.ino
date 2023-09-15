@@ -6,6 +6,7 @@
 #include <U8g2lib.h> // Include the U8g2 library for OLED display.
 #include <ArduinoJson.h>
 #include <FastLED.h>
+#include "config.h"
 
 #define SS_PIN    16  // Define the SS pin (Slave Select) for the RFID module.
 #define RST_PIN   17 // Define the RST pin for the RFID module.

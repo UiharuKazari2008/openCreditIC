@@ -1,7 +1,7 @@
 # openCreditIC / PayPass
 Cheap Networked RFID Reader(s) and cloud-free server for arcade cabinet credit payments. Uses card serial number for ID and local server to manage cards and balances
 
-I hold no responsibility if you use this in a buiness as of the time of writing there is no encryption or authentication with the server/readers
+I hold no responsibility if you use this in a business as of the time of writing there is no encryption or authentication with the server/readers
 
 ## Features
 * ESP32-based RFID Card reader designed for low cast and easy build
@@ -57,6 +57,14 @@ Use something like pm2 or systemd to run as a daemon
 ## Card Reader Design
 ### Warning
 It is expected that th card readers and the server are on there on dedicated wireless network in the case that this is running in a public arcade. As this is updated more security will be added.
+### Configuration File
+Create `config.h` inside the CardReader-* folder
+```c
+const char *ssid = "OCI_NET";
+const char *password = "OCI_NET_SECURE029587";
+const char *apiUrl = "http://192.168.0.2:1777/";
+const char *deviceKey = "API_KEY_FOR_CARD_READERS";
+```
 ### Hardware
 * ESP32 Dev Module
 * RFID-RC522 RFID Module

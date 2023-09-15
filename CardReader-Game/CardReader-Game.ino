@@ -6,6 +6,7 @@
 #include <U8g2lib.h> // Include the U8g2 library for OLED display.
 #include <ArduinoJson.h>
 #include <FastLED.h>
+#include "config.h"
 
 #define SS_PIN    16  // Define the SS pin (Slave Select) for the RFID module.
 #define RST_PIN   17 // Define the RST pin for the RFID module.
@@ -14,10 +15,6 @@
 #define BUTTON_PIN 5 // Button used for front panel button
 #define LED_PIN   12 // Define the pin connected to the WS2812 LED strip.
 #define NUM_LEDS  1  // Define the number of LEDs in the strip.
-const char *ssid = "Radio Noise AX";
-const char *password = "Radio Noise AX";
-const char *apiUrl = "http://card-services.nyti.ne.jp:1777/";
-const char *deviceKey = "";
 
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
