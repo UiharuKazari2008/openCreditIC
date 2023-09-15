@@ -1,11 +1,14 @@
 #showUserAccordion
-    div
+    div.d-flex
         .form-group.col
             label(for='showWalletBalance') Wallet Balance:
-            input#showWalletBalance.form-control.form-control-lg(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
+            input#showWalletBalance.form-control(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
         .form-group.col
             label(for='showFreePlayUser') Free Play:
-            input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play === true) ? 'checked' : ''}`)
+            .btn-group-toggle(data-toggle='buttons')
+                label.btn.btn-success.active
+                    input#showFreePlayUser(type='checkbox' `${(free_play === true) ? 'checked' : ''}` autocomplete='off')
+                    | Free Play
     .card
         #headerUserInfoShow.card-header
             h5.mb-0.d-flex
