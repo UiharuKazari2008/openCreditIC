@@ -459,23 +459,32 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                         }
                         break;
                     case 'info_card':
-                        pendingResponse[(req.params.machine_id).toUpperCase()] = {
-                            id: db.cards[req.params.card].user,
-                            ...db.users[db.cards[req.params.card].user],
-                            cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
-                            history:  history.dispense_log[db.cards[req.params.card].user],
-                            topup_history:  history.topup_log[db.cards[req.params.card].user],
-                        };
-                        res.status(200).json({
-                            user_name: db.users[db.cards[req.params.card].user].name,
-                            cost: 0,
-                            balance: db.users[db.cards[req.params.card].user].credits,
-                            free_play: db.users[db.cards[req.params.card].user].free_play,
-                            status: false,
-                            currency_mode: !!(db.credit_to_currency_rate),
-                            currency_rate: db.credit_to_currency_rate,
-                            japanese: !!((machine && machine.jpn) || db.jpn)
-                        });
+                        if (db.cards[req.params.card] !== undefined) {
+                            pendingResponse[(req.params.machine_id).toUpperCase()] = {
+                                id: db.cards[req.params.card].user,
+                                ...db.users[db.cards[req.params.card].user],
+                                cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
+                                history:  history.dispense_log[db.cards[req.params.card].user],
+                                topup_history:  history.topup_log[db.cards[req.params.card].user],
+                            };
+                            res.status(200).json({
+                                status: true,
+                                user_name: db.users[db.cards[req.params.card].user].name,
+                                cost: 0,
+                                balance: db.users[db.cards[req.params.card].user].credits,
+                                free_play: db.users[db.cards[req.params.card].user].free_play,
+                                status: false,
+                                currency_mode: !!(db.credit_to_currency_rate),
+                                currency_rate: db.credit_to_currency_rate,
+                                japanese: !!((machine && machine.jpn) || db.jpn)
+                            });
+                        } else {
+                            pendingResponse[(req.params.machine_id).toUpperCase()] = {
+                                status: false
+                            }
+                            res.status(404).send("Unknown Card");
+                        }
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     default:
                         if (db.cards[req.params.card] !== undefined &&
@@ -878,7 +887,11 @@ app.get('/wait_data/:machine_id', async (req, res) => {
             await sleep(1000).then(() => {
                 console.log(`Waiting for response...`)
                 if (pendingResponse[(req.params.machine_id).toUpperCase()]) {
-                    res.status(200).json(pendingResponse[(req.params.machine_id).toUpperCase()]);
+                    if (pendingResponse[(req.params.machine_id).toUpperCase()].status) {
+                        res.status(200).json(pendingResponse[(req.params.machine_id).toUpperCase()]);
+                    } else {
+                        res.status(404).json({});
+                    }
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
                 } else if (i >= 30) {
@@ -899,10 +912,14 @@ app.get('/wait_render/:view/:machine_id', async (req, res) => {
             await sleep(1000).then(() => {
                 console.log(`Waiting for response...`)
                 if (pendingResponse[(req.params.machine_id).toUpperCase()]) {
-                    res.status(200).render(req.params.view, {
-                        ...pendingResponse[(req.params.machine_id).toUpperCase()],
-                        show_delete_actions: config.show_delete_actions
-                    });
+                    if (pendingResponse[(req.params.machine_id).toUpperCase()].status) {
+                        res.status(200).render(req.params.view, {
+                            ...pendingResponse[(req.params.machine_id).toUpperCase()],
+                            show_delete_actions: config.show_delete_actions
+                        });
+                    } else {
+                        res.status(404).send("Invalid Response");
+                    }
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
                 } else if (i >= 30) {
