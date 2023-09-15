@@ -233,6 +233,28 @@ function getUser() {
     });
     return false
 }
+function getFreePlay() {
+    $.ajax({
+        type: "GET",
+        url: "/get/free_play",
+        data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                $('#freeplayDataDiv').html(res);
+                $("#showFreePlayModel").modal("show");
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function depositCredits() {
     const model = $('#depositModal')
     let userID = false

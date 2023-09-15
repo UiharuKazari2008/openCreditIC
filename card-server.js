@@ -1593,7 +1593,7 @@ app.get('/get/free_play', (req, res) => {
             db.cost = parseFloat(req.params.cost)
             res.status(200).render('free_play-config', {
                 arcade: db.free_play,
-                machines: Object.entries(db.machines).map(e => {
+                machines: Object.entries(db.machines).filter(e => !e.pos_mode).map(e => {
                     return {
                         id: e[0],
                         ...e[1]
