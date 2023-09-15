@@ -1,20 +1,20 @@
 #showFreePlayAccordion
     .form-group
         label(for='showFreePlayGlobal') Global:
-        .btn-group-toggle(data-toggle='buttons')
+        .btn-group-toggle(data-toggle='buttons' onclick='setFreeplay("/set/arcade/freeplay/"); return false;')
             label.btn.btn-lg.w-100.freeplay(class=`${(arcade) ? 'active' : ''}`)
                 if (arcade)
-                    input#showFreePlayGlobal(type='checkbox' checked='' autocomplete='off' onclick='generalAction("/set/arcade/freeplay/disable"); return false;')
+                    input#showFreePlayGlobal(type='checkbox' checked='' autocomplete='off')
                 else
-                    input#showFreePlayGlobal(type='checkbox' autocomplete='off' onclick='generalAction("/set/arcade/freeplay/enable"); return false;')
+                    input#showFreePlayGlobal(type='checkbox' autocomplete='off')
                 i.fas.fa-circle-check
     for machine in machines
         .form-group
             label(for=`showFreePlay${machine.id}`) #{(machine.name) ? machine.name : machine.id}:
-            .btn-group-toggle(data-toggle='buttons')
+            .btn-group-toggle(data-toggle='buttons' onclick=`setFreeplay("/set/machine/freeplay/", "${machine.id}"); return false;`)
                 label.btn.btn-lg.w-100.freeplay(class=`${(machine.free_play) ? 'active' : ''}`)
                     if (machine.free_play)
-                        input(id=`showFreePlay${machine.id}` type='checkbox' checked='' autocomplete='off' onclick=`generalAction("/set/machine/freeplay/${machine.id}/disable"); return false;`)
+                        input(id=`showFreePlay${machine.id}` type='checkbox' checked='' autocomplete='off')
                     else
-                        input(id=`showFreePlay${machine.id}` type='checkbox' autocomplete='off' onclick=`generalAction("/set/machine/freeplay/${machine.id}/enable"); return false;`)
+                        input(id=`showFreePlay${machine.id}` type='checkbox' autocomplete='off')
                     i.fas.fa-circle-check

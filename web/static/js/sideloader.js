@@ -487,6 +487,27 @@ function addCardToUser() {
     }
     return false
 }
+function setFreeplay(url, machine_id) {
+    $.ajax({
+        type: "GET",
+        url: url + ((machine_id) ? machine_id : '') + '/' + ((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'enable' : 'disable'),
+        data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                alert(res)
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function generalAction(url) {
     $.ajax({
         type: "GET",
