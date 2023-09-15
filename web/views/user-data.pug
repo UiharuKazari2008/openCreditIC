@@ -12,43 +12,36 @@
                     else
                         input#showFreePlayUser(type='checkbox' autocomplete='off')
                     i.fas.fa-circle-check
-    .card
-        #headerUserInfoShow.card-header
-            h5.mb-0.d-flex
-                button.p-0.btn.btn-link.mr-auto(data-toggle='collapse' data-target='#collapseUserInfoShow' aria-expanded='true' aria-controls='collapseUserInfoShow')
-                    div.d-flex.justify-content-center
-                        div.d-flex.align-items-center.justify-content-center.pr-2
-                            i.fas.fa-user-cog
-                        span Customer Info
-                if (locked)
-                    a.btn.bg-secondary(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
-                        div.d-flex.align-items-center.justify-content-center
-                            i.fas.fa-lock-open
-                        span.pl-2.d-none.d-sm-inline Unlock
-                else
-                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/enable")`).d-flex.text-dark.mr-2
-                        div.d-flex.align-items-center.justify-content-center
-                            i.fas.fa-lock
-                        span.pl-2.d-none.d-sm-inline Lock
+    div.d-flex
+        .form-group
+            label(for='showUserID') Customer ID:
+            input#showUserID.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=id, disabled)
+        .form-group
+            label(for='showUserName') Customer Name:
+            input#showUserName.form-control(type='text', name='cardName', placeholder="Customer Name", value=name)
+        .form-group
+            label(for='showUserContact') Contact Info:
+            input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
+    div.d-flex
+        a.btn.btn-primary.w-100(href='#' onclick='updateUserData(); return false;').d-flex.text-white.mr-2
+            div.d-flex.align-items-center.justify-content-center
+                i.fas.fa-floppy-disk
+            span.pl-2.d-none.d-sm-inline Update
+        if (locked)
+            a.btn.bg-secondary(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
+                div.d-flex.align-items-center.justify-content-center
+                    i.fas.fa-lock-open
+                span.pl-2.d-none.d-sm-inline Unlock
+        else
+            a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/enable")`).d-flex.text-dark.mr-2
+                div.d-flex.align-items-center.justify-content-center
+                    i.fas.fa-lock
+                span.pl-2.d-none.d-sm-inline Lock
 
-                a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
-                    div.d-flex.align-items-center.justify-content-center
-                        i.fas.fa-trash
-                    span.pl-2.d-none.d-sm-inline Delete
-
-        #collapseUserInfoShow.collapse.show(aria-labelledby='headerUserInfoShow' data-parent='#showUserAccordion')
-            .card-body
-                .form-group
-                    label(for='showUserID') Customer ID:
-                    input#showUserID.form-control(type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=id, disabled)
-                .form-group
-                    label(for='showUserName') Customer Name:
-                    input#showUserName.form-control(type='text', name='cardName', placeholder="Customer Name", value=name)
-                .form-group
-                    label(for='showUserContact') Contact Info:
-                    input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
-
-                button.btn.btn-primary.ml-auto.w-100(type='submit' onclick='updateUserData(); return false;') Update
+        a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
+            div.d-flex.align-items-center.justify-content-center
+                i.fas.fa-trash
+            span.pl-2.d-none.d-sm-inline Delete
 
     for card in cards
         .card
