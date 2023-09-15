@@ -44,7 +44,15 @@ Supports various other ACR developed Arcade solutions
 2. Install NodeJS
 3. Clone this Git repo and cd into it
 4. `npm install`
-5. `node ./card-server.js`
+5. Create `config.json`
+```json
+{
+  "arcade_name": "Playland Gau",
+  "device_key": "API_KEY_FOR_CARD_READERS",
+  "web_key": "WEB_ACCESS_API_KEY"
+}
+```
+6. `node ./card-server.js`
 
 Use something like pm2 or systemd to run as a daemon 
 
@@ -104,6 +112,7 @@ It is expected that th card readers and the server are on there on dedicated wir
   * ssid - WiFi network Name
   * password - WiFi network password
   * apiUrl - IP/FQDN to access the server
+  * deviceKey - device_key from config.json
 * Build and Flash your card readers
 
 ## Configuration
@@ -127,21 +136,4 @@ Use the following URLs to set settings with your server
 * `/set/machine/blocked_callback/<MAC_ADDRESS>/<URL_ENCODED_URL>`: URL to call on blocked tap
 * `/set/machine/withdraw_callback/<MAC_ADDRESS>/<URL_ENCODED_URL>`: URL to call on credit dispensed
 
-## "Day to Day Operations"
-### Card Registration
-Use one of the following `/register/scan` or `/register/scan/<USERNAME>` URLs, If you dont use a username it will generate a random one.<br/>
-You can also configure the following via queries on the url (`?option=value&option=value`)
-* `credits`: Number of credits to add to the new card
-* `user_name`: Users Display Name
-* `contact`: Contact Info
-* `card_name`: Card Friendly Name
-* `card_contact`: Card Contact Info
-
-Tap th card on the POS reader within 30 secounds, It will give a checkmark if successful
-
-You can also use `/register/new/:user/:card` to register a new card if you know the serial number of the card in hex
-
-### Deposit Credits
-Use `/deposit/scan/<NUMBER_OF_CREDITS>` to register the request and tap a card within 30 seconds
-
-You can also use `/deposit/card/:card/:credits` to deposit if you know the card serial or `/deposit/user/:user/:credits` if you know the user ID
+## Web Interface
