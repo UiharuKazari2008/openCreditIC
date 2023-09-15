@@ -287,14 +287,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
 app.get('/deposit/scan/:machine_id/:credits', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "deposit_card",
                 data: {
                     value: parseFloat(req.params.credits)
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
             console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
         } catch (e) {
@@ -496,19 +496,19 @@ app.get('/callback/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             const machine = db.machines[(req.params.machine_id).toUpperCase()] || {}
-            if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
-                switch (pendingScan[req.params.machine_id].command) {
+            if (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
+                switch (pendingScan[(req.params.machine_id).toUpperCase()].command) {
                     case 'deposit_card':
                         if (db.cards[req.params.card] !== undefined &&
                             db.users[db.cards[req.params.card].user]) {
                             let user = db.users[db.cards[req.params.card].user];
-                            user.credits = user.credits + parseFloat(pendingScan[req.params.machine_id].data.value);
+                            user.credits = user.credits + parseFloat(pendingScan[(req.params.machine_id).toUpperCase()].data.value);
                             db.users[db.cards[req.params.card].user] = user;
                             if (!history.topup_log[db.cards[req.params.card].user])
                                 history.topup_log[db.cards[req.params.card].user] = [];
                             history.topup_log[db.cards[req.params.card].user].push({
                                 card: req.params.card,
-                                cost: pendingScan[req.params.machine_id].data.value,
+                                cost: pendingScan[(req.params.machine_id).toUpperCase()].data.value,
                                 time: Date.now().valueOf()
                             })
                             clearTimeout(saveTimeout);
@@ -523,29 +523,29 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                                 currency_rate: db.credit_to_currency_rate,
                                 japanese: !!((machine && machine.jpn) || db.jpn)
                             });
-                            console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${pendingScan[req.params.machine_id].data.value})`)
+                            console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${pendingScan[(req.params.machine_id).toUpperCase()].data.value})`)
                         } else {
                             res.status(404).send('Unknown Card');
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
-                        pendingScan[req.params.machine_id] = null;
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     case 'register_new_card':
-                        if (db.users[pendingScan[req.params.machine_id].data.user] !== undefined &&
+                        if (db.users[pendingScan[(req.params.machine_id).toUpperCase()].data.user] !== undefined &&
                             db.cards[req.params.card] === undefined) {
                             let card = {
-                                user: pendingScan[req.params.machine_id].data.user,
-                                name: pendingScan[req.params.machine_id].data.name || null,
-                                contact: pendingScan[req.params.machine_id].data.contact || null,
+                                user: pendingScan[(req.params.machine_id).toUpperCase()].data.user,
+                                name: pendingScan[(req.params.machine_id).toUpperCase()].data.name || null,
+                                contact: pendingScan[(req.params.machine_id).toUpperCase()].data.contact || null,
                                 locked: false
                             }
                             db.cards[req.params.card] = card;
-                            if (pendingScan[req.params.machine_id].data.transferred) {
-                                delete db.cards[pendingScan[req.params.machine_id].data.transferred];
+                            if (pendingScan[(req.params.machine_id).toUpperCase()].data.transferred) {
+                                delete db.cards[pendingScan[(req.params.machine_id).toUpperCase()].data.transferred];
                             }
                             clearTimeout(saveTimeout);
                             saveTimeout = setTimeout(saveDatabase, 5000);
-                            console.log(`New Card Created: ${req.params.card} for ${pendingScan[req.params.machine_id].data.user}`, card)
+                            console.log(`New Card Created: ${req.params.card} for ${pendingScan[(req.params.machine_id).toUpperCase()].data.user}`, card)
                             res.status(210).json({
                                 japanese: !!((machine && machine.jpn) || db.jpn)
                             });
@@ -553,7 +553,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                             res.status(400).send("Card Already Exists!");
                         }
-                        pendingScan[req.params.machine_id] = null;
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     case 'delete_user':
                         if (db.cards[req.params.card] !== undefined) {
@@ -573,7 +573,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
-                        pendingScan[req.params.machine_id] = null;
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     case 'delete_card':
                         if (db.cards[req.params.card] !== undefined) {
@@ -588,7 +588,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
-                        pendingScan[req.params.machine_id] = null;
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     case 'freeplay_card':
                         if (db.cards[req.params.card] !== undefined &&
@@ -598,7 +598,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                                 history.topup_log[db.cards[req.params.card].user] = [];
                             history.topup_log[db.cards[req.params.card].user].push({
                                 card: req.params.card,
-                                cost: pendingScan[req.params.machine_id].data.value,
+                                cost: pendingScan[(req.params.machine_id).toUpperCase()].data.value,
                                 time: Date.now().valueOf()
                             })
                             clearTimeout(saveTimeout);
@@ -618,12 +618,12 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(404).send("Unknown Card");
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
-                        pendingScan[req.params.machine_id] = null;
+                        pendingScan[(req.params.machine_id).toUpperCase()] = null;
                         break;
                     case 'transfer_card':
                         if (db.cards[req.params.card] !== undefined) {
                             const old_card = db.cards[req.params.card];
-                            pendingScan[req.params.machine_id] = {
+                            pendingScan[(req.params.machine_id).toUpperCase()] = {
                                 command: "register_new_card",
                                 data: {
                                     user: old_card.user,
@@ -731,23 +731,23 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
 })
 app.get('/cancel_pending/:machine_id', (req, res) => {
     console.log("Cancelling pending");
-    pendingScan[req.params.machine_id] = null;
+    pendingScan[(req.params.machine_id).toUpperCase()] = null;
     clearTimeout(pendingTimeout);
     res.status(200).send("No pending scan requests");
 })
 app.get('/get_pending/:machine_id', (req, res) => {
-    if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
-        res.status(200).json(pendingScan[req.params.machine_id]);
+    if (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
+        res.status(200).json(pendingScan[(req.params.machine_id).toUpperCase()]);
     } else {
         res.status(404).send("No pending scan requests");
     }
 })
 app.get('/wait_pending/:machine_id', async (req, res) => {
-    if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
-        while (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
+    if (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
+        while (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
             await sleep(1000).then(() => {
                 console.log(`Waiting for card scan...`)
-                if (!(pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command)) {
+                if (!(pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command)) {
                     res.status(200).send('Request Completed');
                 }
             })
@@ -774,7 +774,7 @@ app.get('/register/scan/:machine_id', (req, res) => {
             }
             db.users[userId] = user;
             console.log(`User Created: ${userId}`, user)
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "register_new_card",
                 data: {
                     user: userId,
@@ -784,8 +784,8 @@ app.get('/register/scan/:machine_id', (req, res) => {
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
-            console.log(`New Pending Card for ${userId}`, pendingScan[req.params.machine_id])
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
+            console.log(`New Pending Card for ${userId}`, pendingScan[(req.params.machine_id).toUpperCase()])
             res.status(200).send(`Waiting for card to be scanned for ${userId}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -819,7 +819,7 @@ app.get('/register/scan/:machine_id/:user', (req, res) => {
                     time: Date.now().valueOf()
                 })
             }
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "register_new_card",
                 data: {
                     user: req.params.user,
@@ -829,8 +829,8 @@ app.get('/register/scan/:machine_id/:user', (req, res) => {
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
-            console.log(`New Pending Card for ${req.params.user}`, pendingScan[req.params.machine_id])
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
+            console.log(`New Pending Card for ${req.params.user}`, pendingScan[(req.params.machine_id).toUpperCase()])
             res.status(200).send(`Waiting for card to be scanned for ${req.params.user}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
@@ -915,14 +915,14 @@ app.get('/delete/user/:user', (req, res) => {
 app.get('/delete/scan/user/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "delete_user",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
             console.log(`New Pending Account Deletion`)
             res.status(200).send(`Waiting for card to be scanned for user delete operation`);
         } catch (e) {
@@ -978,14 +978,14 @@ app.get('/reassign/card/:user/:card', (req, res) => {
 app.get('/reassign/scan/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "transfer_card",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
             console.log(`New Pending Card Transfer`)
             res.status(200).send(`Waiting for card to be scanned for card transfer operation`);
         } catch (e) {
@@ -999,14 +999,14 @@ app.get('/reassign/scan/:machine_id', (req, res) => {
 app.get('/delete/scan/card/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "delete_card",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
             console.log(`New Pending Card Deletion`)
             res.status(200).send(`Waiting for card to be scanned for card delete operation`);
         } catch (e) {
@@ -1101,14 +1101,14 @@ app.get('/set/card/freeplay/:card/:value', (req, res) => {
 app.get('/scan/freeplay/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[req.params.machine_id] = {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "freeplay_card",
                 data: {
                     time: null
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to enable freeplay`);
             console.log(`Pending Card Freeplay`);
         } catch (e) {
