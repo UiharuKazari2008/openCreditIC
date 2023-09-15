@@ -428,6 +428,29 @@ app.get('/get/user/:user', (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+app.get('/get/rendered/user/:user', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.users[req.params.user] !== undefined) {
+                let user = db.users[req.params.user];
+                res.status(200).render('user-data', {
+                    id: req.params.user,
+                    ...user,
+                    cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === req.params.user),
+                    history:  history.dispense_log[req.params.user],
+                    topup_history:  history.topup_log[req.params.user],
+                });
+            } else {
+                res.status(404).send("Unknown User");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/get/scan/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -455,6 +478,30 @@ app.get('/get/card/:card', (req, res) => {
                 db.users[db.cards[req.params.card].user] !== undefined) {
                 let user = db.users[db.cards[req.params.card].user];
                 res.status(200).json({
+                    id: db.cards[req.params.card].user,
+                    ...user,
+                    cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
+                    history:  history.dispense_log[db.cards[req.params.card].user],
+                    topup_history:  history.topup_log[db.cards[req.params.card].user],
+                });
+            } else {
+                res.status(404).send("Unknown Card");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
+app.get('/get/rendered/card/:card', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.cards[req.params.card] !== undefined &&
+                db.users[db.cards[req.params.card].user] !== undefined) {
+                let user = db.users[db.cards[req.params.card].user];
+                res.status(200).render('user-data', {
                     id: db.cards[req.params.card].user,
                     ...user,
                     cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),

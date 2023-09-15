@@ -116,7 +116,7 @@ function getUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/get/${(userId) ? ('user/' + userId) : (cardId) ? ('card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
+    const url = `/get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
     $.ajax({
         type: "GET",
         url, data: '',
