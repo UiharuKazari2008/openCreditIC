@@ -41,7 +41,7 @@ body.bg-dark.text-white
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-coins
                         span Deposit
-            div.btn-group.btn-group-lg.mt-1
+            div.btn-group.btn-group-lg.mt-2
                 a.btn.btn-info.rounded-left(href='/history')
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
@@ -55,13 +55,13 @@ body.bg-dark.text-white
                 .dropdown-menu
                     .dropdown-header Manage Customers
                     .dropdown-divider
-                    a.dropdown-item(href='#', data-toggle='modal', data-target='#findUserModal') Get/Update Customer
+                    a.dropdown-item(href='#', data-toggle='modal', data-target='#findUserModal') Get/Update
                     a.dropdown-item(href='#' onclick='transferCard(); return false;') Card Transfer
                     a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/card"); return false;') Delete Card
                     a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/user"); return false;') Delete User
                     .dropdown-header Arcade Management
                     .dropdown-divider
-                    a.dropdown-item(href='#' onclick='getFreePlay(); return false;') Free Play Settings
+                    a.dropdown-item(href='#' onclick='getFreePlay(); return false;') Free Play
 
 
         div.mt-3.col-sm-6
