@@ -5,7 +5,8 @@ I hold no responsibility if you use this in a buiness as of the time of writing 
 
 ## Features
 * ESP32-based RFID Card reader designed for low cast and easy build
-* Local database
+* No Internet Access Required!
+* Local Database and No Cloud Anything!
 * Simple URL based administration
 * Per-User Multi-Card management
 * Per-User Credit management

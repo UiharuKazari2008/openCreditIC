@@ -1,0 +1,153 @@
+head
+    title openCreditIC Management
+    link(rel='stylesheet', href='/static/css/bootstrap.min.css')
+    link(rel='stylesheet', href='/static/css/fontawesome.min.css')
+    link(rel='stylesheet', href='/static/css/all.min.css')
+    link(rel='stylesheet', href='/static/css/custom.css')
+    script(src='/static/js/jquery.min.js')
+    script(src='/static/js/popper.min.js')
+    script(src='/static/js/bootstrap.min.js')
+    script(src='/static/js/sideloader.js')
+body.bg-dark.text-white
+    div.container.text-center
+        h1 openCreditIC Manager
+        div.btn-group-vertical.mt-5.col-sm-6
+            div.w-100
+                .form-group
+                    select#posTerminal.form-control.form-control-lg(name='posTerminal')
+                        each machine in pos_terminals
+                            option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
+            div.btn-group.btn-group-lg
+                a.btn.btn-success.rounded-left(href='#', data-toggle='modal', data-target='#newCardModal').w-50
+                    div.d-flex.justify-content-center
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-credit-card
+                        span Register
+                a.btn.btn-success.rounded-right(href='#', data-toggle='modal', data-target='#depositModal').w-50
+                    div.d-flex.justify-content-center
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-coins
+                        span Deposit
+            div.btn-group.btn-group-lg.mt-1
+                a.btn.btn-info.rounded-left(href='/history')
+                    div.d-flex.justify-content-center
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-list-alt
+                        span Bookkeeping
+                button.btn.dropdown-toggle.btn-warning.rounded-right(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+                    div.d-flex.justify-content-center
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-cog
+                        span Tools
+                .dropdown-menu
+                    .dropdown-header Manage Customers
+                    .dropdown-divider
+                    a.dropdown-item(href='#').disabled Find Customer
+                    a.dropdown-item(href='#').disabled Update Customer
+                    a.dropdown-item(href='#' onclick='transferCard(); return false;') Card Transfer
+                    a.dropdown-item(href='#').disabled Add Additional Card
+                    .dropdown-header Arcade Management
+                    .dropdown-divider
+                    a.dropdown-item(href='#').disabled Free Play Settings
+                    a.dropdown-item(href='#' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
+
+
+        div.mt-3.col-sm-6
+
+    div.modal#newCardModal(tabindex='-1' role='dialog')
+        div.modal-dialog.text-dark
+            div.modal-content
+                div.modal-header.bg-success.text-white.py-2
+                    h5.modal-title Register Customer
+                    button.close(type='button', data-dismiss='modal')
+                        span &times;
+                div.modal-body
+                    #registerAccordion
+                        .form-group
+                            label(for='initialBalance') Initial Balance:
+                            input#initialBalance.form-control.form-control-lg(type='number', name='initialBalance', placeholder="0 Credits")
+                        .card
+                            #headerUserInfo.card-header
+                                h5.mb-0
+                                    button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseUserInfo' aria-expanded='true' aria-controls='collapseUserInfo')
+                                        div.d-flex.justify-content-center
+                                            div.d-flex.align-items-center.justify-content-center.pr-2
+                                                i.fas.fa-user-cog
+                                            span Customer Info
+                            #collapseUserInfo.collapse.show(aria-labelledby='headerUserInfo' data-parent='#registerAccordion')
+                                .card-body
+                                    .form-group
+                                        label(for='userID') Customer ID:
+                                        input#userID.form-control(type='text', name='cardName', placeholder="Leave blank for random")
+                                    .form-group
+                                        label(for='userName') Customer Name:
+                                        input#userName.form-control(type='text', name='cardName', placeholder="Customer Name")
+                                    .form-group
+                                        label(for='userContact') Contact Info:
+                                        input#userContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.")
+                        .card
+                            #headingTwo.card-header
+                                h5.mb-0
+                                    button.p-0.btn.btn-link.collapsed(data-toggle='collapse' data-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
+                                        div.d-flex.justify-content-center
+                                            div.d-flex.align-items-center.justify-content-center.pr-2
+                                                i.fas.fa-credit-card
+                                            span Card Info
+                            #collapseTwo.collapse(aria-labelledby='headingTwo' data-parent='#registerAccordion')
+                                .card-body
+                                    .form-group
+                                        label(for='cardName') Serial Number:
+                                        input#cardNum.form-control(type='text', name='cardName', placeholder="Leave blank to Scan")
+                                    .form-group
+                                        label(for='cardName') Card Name:
+                                        input#cardName.form-control(type='text', name='cardName', placeholder="Friendly name for card")
+                                    .form-group
+                                        label(for='cardName') Contact Info:
+                                        input#cardContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.")
+                div.modal-footer
+                    button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
+                    button.btn.btn-primary(type='submit' onclick='registerUser(); return false;') Create
+    div.modal#depositModal(tabindex='-1' role='dialog')
+        div.modal-dialog.text-dark
+            div.modal-content
+                div.modal-header.bg-success.text-white.py-2
+                    h5.modal-title Deposit Credits
+                    button.close(type='button', data-dismiss='modal')
+                        span &times;
+                div.modal-body
+                    #depositAccordion
+                        .form-group
+                            label(for='initialBalance') Credits:
+                            input#depositBalance.form-control.form-control-lg(type='number', name='depositBalance', placeholder="0 Credits")
+                        .card
+                            #headerDepositAdv.card-header
+                                h5.mb-0
+                                    button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseCardInfo' aria-expanded='true' aria-controls='collapseCardInfo')
+                                        div.d-flex.justify-content-center
+                                            div.d-flex.align-items-center.justify-content-center.pr-2
+                                                i.fas.fa-user-cog
+                                            span Advanced
+                            #collapseCardInfo.collapse(aria-labelledby='headerDepositAdv' data-parent='#depositAccordion')
+                                .card-body
+                                    p
+                                        | Use this section to deposit to a specific user ID or card serial number without scanning
+                                    .form-group
+                                        label(for='cardName') User ID:
+                                        input#depositUser.form-control(type='text', name='cardName', placeholder="Leave blank for random")
+                                    .form-group
+                                        label(for='cardName') Card S/N:
+                                        input#depositCard.form-control(type='text', name='cardName', placeholder="Users Name")
+                div.modal-footer
+                    button.btn.btn-success(type='button' onclick='freePlayUser(); return false;').mr-auto Free Play
+                    button.btn.btn-secondary(type='button' onclick='clearDepositCredits(); return false;') Cancel
+                    button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Create
+    div.modal#waitForCardScanModal.bg-dark(tabindex='-1' role='dialog')
+        div.modal-dialog.text-dark
+            div.modal-content
+                div.modal-body.align-items-center.d-flex.flex-column.text-white.bg-danger
+                    div.d-flex.flex-row
+                        i.fas.fa-5x.fa-credit-card
+                    div.d-flex.flex-row.mt-2
+                        span Scan card now!
+                    div.d-flex
+                        button.btn.btn-secondary.mt-3(type='button' onclick='cancelRequest(); return false;') Cancel

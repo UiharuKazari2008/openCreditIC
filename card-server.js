@@ -1,6 +1,7 @@
 const fs = require("fs");
 const express = require('express');
 const app = express();
+const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
 const request = require('request').defaults({ encoding: null });
 const port = 1777;
 if (!fs.existsSync('./cards.json')) {
@@ -23,7 +24,9 @@ if (!fs.existsSync('./history.json')) {
 }
 let history = require('./history.json');
 let pendingTimeout;
-let pendingScan = null;
+let pendingScan = {
+
+};
 
 let saveTimeout
 function saveDatabase() {
@@ -58,9 +61,16 @@ function callVFDCenter(machine, line1) {
         }
     })
 }
+app.set('view engine', 'pug');
+app.set('views', './web/views');
 app.get('/', (req, res) => {
-    res.status(200).send("FastPay Server Beta");
+    res.status(200).render('home', {
+        pendingScan,
+        db,
+        pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true)
+    });
 });
+app.use('/static', express.static('./web/static', ));
 // Should only be called by a cabinet
 app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, res) => {
     if (db.cards && db.users) {
@@ -250,7 +260,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
                     console.error(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
             } else {
-                res.status(404).end();
+                res.status(404).send('Unknown Card');
                 if (machine && machine.vfd) {
                     // 無効なカード
                     callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$96B38CF882C8834A815B8368@$$! **' : '** Invalid Card! **', req.params.card)
@@ -267,32 +277,32 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], (req, re
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 // Called by POS
-app.get('/deposit/scan/:credits', (req, res) => {
+app.get('/deposit/scan/:machine_id/:credits', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "deposit_card",
                 data: {
                     value: parseFloat(req.params.credits)
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
             console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send("Server Error");
     }
 });
 app.get('/deposit/card/:card/:credits', (req, res) => {
@@ -315,15 +325,15 @@ app.get('/deposit/card/:card/:credits', (req, res) => {
                 res.status(200).send(user.credits.toString());
                 console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${req.params.credits})`)
             } else {
-                res.status(404).end();
+                res.status(404).send('Unknown Card');
                 console.error(`Unknown Card: ${req.params.card}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send("Server Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/deposit/user/:user/:credits', (req, res) => {
@@ -345,15 +355,15 @@ app.get('/deposit/user/:user/:credits', (req, res) => {
                 res.status(200).send(user.credits.toString());
                 console.log(`User TopUp: ${req.params.user} : New Balance = ${user.credits} (${req.params.credits})`)
             } else {
-                res.status(404).end();
-                console.error(`Unknown Card: ${req.params.user}`)
+                res.status(404).send('Unknown User');
+                console.error(`Unknown User: ${req.params.user}`)
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/wallet/card/:card', (req, res) => {
@@ -365,14 +375,14 @@ app.get('/get/wallet/card/:card', (req, res) => {
                 let user = db.users[db.cards[req.params.card].user];
                 res.status(200).send(user.credits.toString());
             } else {
-                res.status(404).end();
+                res.status(404).send('Unknown Card');
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/wallet/user/:user', (req, res) => {
@@ -382,14 +392,14 @@ app.get('/get/wallet/user/:user', (req, res) => {
                 let user = db.users[req.params.user];
                 res.status(200).send(user.credits.toString());
             } else {
-                res.status(404).end();
+                res.status(404).send("Unknown User");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/user/:user', (req, res) => {
@@ -404,14 +414,14 @@ app.get('/get/user/:user', (req, res) => {
                     topup_history:  history.topup_log[req.params.user],
                 });
             } else {
-                res.status(404).end();
+                res.status(404).send("Unknown User");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/card/:card', (req, res) => {
@@ -427,14 +437,14 @@ app.get('/get/card/:card', (req, res) => {
                     topup_history:  history.topup_log[db.cards[req.params.card].user],
                 });
             } else {
-                res.status(404).end();
+                res.status(404).send("Unknown Card");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/user', (req, res) => {
@@ -452,10 +462,10 @@ app.get('/get/user', (req, res) => {
             }));
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/card', (req, res) => {
@@ -464,10 +474,10 @@ app.get('/get/card', (req, res) => {
             res.status(200).json(db.cards);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/history/cards', (req, res) => {
@@ -476,29 +486,29 @@ app.get('/get/history/cards', (req, res) => {
             res.status(200).json(history.cards);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/callback/:machine_id/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             const machine = db.machines[(req.params.machine_id).toUpperCase()] || {}
-            if (pendingScan && pendingScan.command) {
-                switch (pendingScan.command) {
+            if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
+                switch (pendingScan[req.params.machine_id].command) {
                     case 'deposit_card':
                         if (db.cards[req.params.card] !== undefined &&
                             db.users[db.cards[req.params.card].user]) {
                             let user = db.users[db.cards[req.params.card].user];
-                            user.credits = user.credits + parseFloat(pendingScan.data.value);
+                            user.credits = user.credits + parseFloat(pendingScan[req.params.machine_id].data.value);
                             db.users[db.cards[req.params.card].user] = user;
                             if (!history.topup_log[db.cards[req.params.card].user])
                                 history.topup_log[db.cards[req.params.card].user] = [];
                             history.topup_log[db.cards[req.params.card].user].push({
                                 card: req.params.card,
-                                cost: pendingScan.data.value,
+                                cost: pendingScan[req.params.machine_id].data.value,
                                 time: Date.now().valueOf()
                             })
                             clearTimeout(saveTimeout);
@@ -513,29 +523,29 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                                 currency_rate: db.credit_to_currency_rate,
                                 japanese: !!((machine && machine.jpn) || db.jpn)
                             });
-                            console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${pendingScan.data.value})`)
+                            console.log(`Card TopUp: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${pendingScan[req.params.machine_id].data.value})`)
                         } else {
-                            res.status(404).end();
+                            res.status(404).send('Unknown Card');
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
-                        pendingScan = null;
+                        pendingScan[req.params.machine_id] = null;
                         break;
                     case 'register_new_card':
-                        if (db.users[pendingScan.data.user] !== undefined &&
+                        if (db.users[pendingScan[req.params.machine_id].data.user] !== undefined &&
                             db.cards[req.params.card] === undefined) {
                             let card = {
-                                user: pendingScan.data.user,
-                                name: pendingScan.data.name || null,
-                                contact: pendingScan.data.contact || null,
+                                user: pendingScan[req.params.machine_id].data.user,
+                                name: pendingScan[req.params.machine_id].data.name || null,
+                                contact: pendingScan[req.params.machine_id].data.contact || null,
                                 locked: false
                             }
                             db.cards[req.params.card] = card;
-                            if (pendingScan.data.transferred) {
-                                delete db.cards[pendingScan.data.transferred];
+                            if (pendingScan[req.params.machine_id].data.transferred) {
+                                delete db.cards[pendingScan[req.params.machine_id].data.transferred];
                             }
                             clearTimeout(saveTimeout);
                             saveTimeout = setTimeout(saveDatabase, 5000);
-                            console.log(`New Card Created: ${req.params.card} for ${pendingScan.data.user}`, card)
+                            console.log(`New Card Created: ${req.params.card} for ${pendingScan[req.params.machine_id].data.user}`, card)
                             res.status(210).json({
                                 japanese: !!((machine && machine.jpn) || db.jpn)
                             });
@@ -543,7 +553,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                             res.status(400).send("Card Already Exists!");
                         }
-                        pendingScan = null;
+                        pendingScan[req.params.machine_id] = null;
                         break;
                     case 'delete_user':
                         if (db.cards[req.params.card] !== undefined) {
@@ -563,7 +573,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
-                        pendingScan = null;
+                        pendingScan[req.params.machine_id] = null;
                         break;
                     case 'delete_card':
                         if (db.cards[req.params.card] !== undefined) {
@@ -578,7 +588,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             console.error(`Card Unknown: ${req.params.card}`)
                             res.status(404).send("Unregistered Card!");
                         }
-                        pendingScan = null;
+                        pendingScan[req.params.machine_id] = null;
                         break;
                     case 'freeplay_card':
                         if (db.cards[req.params.card] !== undefined &&
@@ -588,7 +598,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                                 history.topup_log[db.cards[req.params.card].user] = [];
                             history.topup_log[db.cards[req.params.card].user].push({
                                 card: req.params.card,
-                                cost: pendingScan.data.value,
+                                cost: pendingScan[req.params.machine_id].data.value,
                                 time: Date.now().valueOf()
                             })
                             clearTimeout(saveTimeout);
@@ -605,15 +615,15 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             });
                             console.log("User is in Freeplay: " + db.cards[req.params.card].user)
                         } else {
-                            res.status(404).end();
+                            res.status(404).send("Unknown Card");
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
-                        pendingScan = null;
+                        pendingScan[req.params.machine_id] = null;
                         break;
                     case 'transfer_card':
                         if (db.cards[req.params.card] !== undefined) {
                             const old_card = db.cards[req.params.card];
-                            pendingScan = {
+                            pendingScan[req.params.machine_id] = {
                                 command: "register_new_card",
                                 data: {
                                     user: old_card.user,
@@ -650,7 +660,7 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             });
                             console.log(`Card Scan No Action: ${req.params.card} for ${db.cards[req.params.card].user} : Balance = ${user.credits}`)
                         } else {
-                            res.status(404).end();
+                            res.status(404).send("Unknown Card");
                             console.error(`Unknown Card: ${req.params.card}`)
                         }
                         break;
@@ -673,17 +683,17 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                     });
                     console.log(`Card Scan No Action: ${req.params.card} for ${db.cards[req.params.card].user} : Balance = ${user.credits}`)
                 } else {
-                    res.status(404).end();
+                    res.status(404).send("Unknown Card");
                     console.error(`Unknown Card: ${req.params.card}`)
                 }
                 //res.status(410).send("Unknown Server Command");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 })
 app.get('/blocked_callback/:machine_id/:card', (req, res) => {
@@ -713,20 +723,44 @@ app.get('/blocked_callback/:machine_id/:card', (req, res) => {
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 })
-app.get('/cancel_pending', (req, res) => {
+app.get('/cancel_pending/:machine_id', (req, res) => {
     console.log("Cancelling pending");
-    pendingScan = null;
+    pendingScan[req.params.machine_id] = null;
     clearTimeout(pendingTimeout);
     res.status(200).send("No pending scan requests");
 })
+app.get('/get_pending/:machine_id', (req, res) => {
+    if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
+        res.status(200).json(pendingScan[req.params.machine_id]);
+    } else {
+        res.status(404).send("No pending scan requests");
+    }
+})
+app.get('/wait_pending/:machine_id', async (req, res) => {
+    if (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
+        while (pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command) {
+            await sleep(1000).then(() => {
+                console.log(`Waiting for card scan...`)
+                if (!(pendingScan[req.params.machine_id] && pendingScan[req.params.machine_id].command)) {
+                    res.status(200).send('Request Completed');
+                }
+            })
+        }
+    } else {
+        res.status(404).send("No pending scan requests");
+    }
+})
+app.get('/get_pending', (req, res) => {
+    res.status(200).json(pendingScan);
+})
 // Register new User
-app.get('/register/scan', (req, res) => {
+app.get('/register/scan/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
             const userId = `user-${(Date.now()).valueOf()}`
@@ -736,10 +770,11 @@ app.get('/register/scan', (req, res) => {
                 contact: req.query.user_contact || null,
                 locked: false,
                 free_play: false,
+                date_created: Date.now().valueOf(),
             }
             db.users[userId] = user;
             console.log(`User Created: ${userId}`, user)
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "register_new_card",
                 data: {
                     user: userId,
@@ -749,18 +784,18 @@ app.get('/register/scan', (req, res) => {
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
-            console.log(`New Pending Card for ${userId}`, pendingScan)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            console.log(`New Pending Card for ${userId}`, pendingScan[req.params.machine_id])
             res.status(200).send(`Waiting for card to be scanned for ${userId}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
-app.get('/register/scan/:user', (req, res) => {
+app.get('/register/scan/:machine_id/:user', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.users[req.params.user] === undefined) {
@@ -770,6 +805,7 @@ app.get('/register/scan/:user', (req, res) => {
                     contact: req.query.user_contact || null,
                     locked: false,
                     free_play: false,
+                    date_created: Date.now().valueOf(),
                 }
                 db.users[req.params.user] = user;
                 console.log(`User Created: ${req.params.user}`, user)
@@ -783,7 +819,7 @@ app.get('/register/scan/:user', (req, res) => {
                     time: Date.now().valueOf()
                 })
             }
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "register_new_card",
                 data: {
                     user: req.params.user,
@@ -793,15 +829,15 @@ app.get('/register/scan/:user', (req, res) => {
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
-            console.log(`New Pending Card for ${req.params.user}`, pendingScan)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
+            console.log(`New Pending Card for ${req.params.user}`, pendingScan[req.params.machine_id])
             res.status(200).send(`Waiting for card to be scanned for ${req.params.user}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/register/new/:user/:card', (req, res) => {
@@ -814,6 +850,7 @@ app.get('/register/new/:user/:card', (req, res) => {
                     contact: req.query.user_contact || null,
                     locked: false,
                     free_play: false,
+                    date_created: Date.now().valueOf(),
                 }
                 db.users[req.params.user] = user;
                 console.log(`User Created: ${req.params.user}`, user)
@@ -849,7 +886,7 @@ app.get('/register/new/:user/:card', (req, res) => {
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/delete/user/:user', (req, res) => {
@@ -872,20 +909,20 @@ app.get('/delete/user/:user', (req, res) => {
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
-app.get('/delete/scan/user', (req, res) => {
+app.get('/delete/scan/user/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "delete_user",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
             console.log(`New Pending Account Deletion`)
             res.status(200).send(`Waiting for card to be scanned for user delete operation`);
         } catch (e) {
@@ -893,7 +930,7 @@ app.get('/delete/scan/user', (req, res) => {
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 // Card Management
@@ -911,10 +948,10 @@ app.get('/set/card/lock/:card/:value', (req, res) => {
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/reassign/card/:user/:card', (req, res) => {
@@ -932,44 +969,44 @@ app.get('/reassign/card/:user/:card', (req, res) => {
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
-app.get('/reassign/scan', (req, res) => {
+app.get('/reassign/scan/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "transfer_card",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
             console.log(`New Pending Card Transfer`)
             res.status(200).send(`Waiting for card to be scanned for card transfer operation`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
-app.get('/delete/scan/card', (req, res) => {
+app.get('/delete/scan/card/:machine_id', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan = {
+            pendingScan[req.params.machine_id] = {
                 command: "delete_card",
                 data: {
 
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
             console.log(`New Pending Card Deletion`)
             res.status(200).send(`Waiting for card to be scanned for card delete operation`);
         } catch (e) {
@@ -977,7 +1014,7 @@ app.get('/delete/scan/card', (req, res) => {
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/delete/card/:card', (req, res) => {
@@ -997,7 +1034,7 @@ app.get('/delete/card/:card', (req, res) => {
             res.status(500).send("Internal System Error");
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 // User Management
@@ -1015,10 +1052,10 @@ app.get('/set/user/lock/:user/:value', (req, res) => {
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/user/freeplay/:user/:value', (req, res) => {
@@ -1031,35 +1068,55 @@ app.get('/set/user/freeplay/:user/:value', (req, res) => {
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 console.log(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.user)
             } else {
-                res.status(400);
+                res.status(404).send("Unknown User");
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
-app.get('/scan/freeplay', (req, res) => {
+app.get('/set/card/freeplay/:card/:value', (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan = {
+            if (db.cards[req.params.card] !== undefined && db.users[db.cards[req.params.card].user] !== undefined) {
+                db.users[db.cards[req.params.card].user].free_play = (req.params.value === "enable");
+                res.status(200).send(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.card);
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.card)
+            } else {
+                res.status(404).send("Unknown Card");
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
+app.get('/scan/freeplay/:machine_id', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan[req.params.machine_id] = {
                 command: "freeplay_card",
                 data: {
                     time: null
                 }
             }
             clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { pendingScan = null; }, 30000)
+            pendingTimeout = setTimeout(() => { delete pendingScan[req.params.machine_id]; }, 30000)
             res.status(200).send(`Waiting for card to be scanned to enable freeplay`);
             console.log(`Pending Card Freeplay`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/disable_freeplay/user', (req, res) => {
@@ -1074,14 +1131,37 @@ app.get('/disable_freeplay/user', (req, res) => {
             console.log(`Users are all in credit mode`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 
 // Machine Management
+app.get('/create/pos/:machine_id', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
+            }
+            db.machines[(req.params.machine_id).toUpperCase()].pos_mode = true;
+            if (req.query.name && req.query.name.length > 0)
+                db.machines[(req.params.machine_id).toUpperCase()].name = req.query.name;
+            if (req.query.name && req.query.location.length > 0)
+                db.machines[(req.params.machine_id).toUpperCase()].location = req.query.location;
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            console.log(`POS Terminal ${(req.params.machine_id).toUpperCase()} created`)
+            res.status(200).send(`POS Terminal ${(req.params.machine_id).toUpperCase()} created`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -1095,10 +1175,10 @@ app.get('/set/machine/cost/:machine_id/:cost', (req, res) => {
             res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} now costs ${req.params.cost}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/name/:machine_id/:name', (req, res) => {
@@ -1114,10 +1194,10 @@ app.get('/set/machine/name/:machine_id/:name', (req, res) => {
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} is named ${req.params.name}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/antihog/:machine_id/:tap/:min', (req, res) => {
@@ -1134,10 +1214,10 @@ app.get('/set/machine/antihog/:machine_id/:tap/:min', (req, res) => {
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} antihog is ${req.params.tap} for ${req.params.min}min`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
@@ -1153,10 +1233,10 @@ app.get('/set/machine/vfd/:machine_id/:ip_address/:port', (req, res) => {
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a VFD enabled`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
@@ -1172,10 +1252,10 @@ app.get('/set/machine/button/:machine_id/:api_endpoint', (req, res) => {
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a button function: ${db.machines[(req.params.machine_id).toUpperCase()].button_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) => {
@@ -1197,10 +1277,10 @@ app.get('/set/machine/blocked_callback/:machine_id/:api_endpoint', (req, res) =>
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a blocked callback function: ${db.machines[(req.params.machine_id).toUpperCase()].blocked_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/withdraw_callback/:machine_id/:api_endpoint', (req, res) => {
@@ -1220,10 +1300,10 @@ app.get('/set/machine/withdraw_callback/:machine_id/:api_endpoint', (req, res) =
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} now has a blocked withdraw function: ${db.machines[(req.params.machine_id).toUpperCase()].withdraw_callback}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
@@ -1239,10 +1319,10 @@ app.get('/set/machine/freeplay/:machine_id/:value', (req, res) => {
             console.log(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + (req.params.machine_id).toUpperCase())
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
@@ -1258,10 +1338,10 @@ app.get('/set/machine/japanese/:machine_id/:value', (req, res) => {
             console.log("Machine VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"))
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/delete/machine/:machine_id', (req, res) => {
@@ -1275,10 +1355,10 @@ app.get('/delete/machine/:machine_id', (req, res) => {
             console.log("Machine deleted: " + (req.params.machine_id).toUpperCase());
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/get/machine/:machine_id', (req, res) => {
@@ -1304,10 +1384,10 @@ app.get('/get/machine/:machine_id', (req, res) => {
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 // Arcade Management
@@ -1321,10 +1401,10 @@ app.get('/set/arcade/cost/:cost', (req, res) => {
             res.status(200).send(`Arcade global costs is ${req.params.cost}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/low_balance/:balance', (req, res) => {
@@ -1337,10 +1417,10 @@ app.get('/set/arcade/low_balance/:balance', (req, res) => {
             res.status(200).send(`Arcade low credits warning value is ${req.params.balance}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/currency/:multiplyer', (req, res) => {
@@ -1357,10 +1437,10 @@ app.get('/set/arcade/currency/:multiplyer', (req, res) => {
             res.status(200).send(`Arcade currency multiplayer is 1 Credit to ${req.params.multiplyer}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/freeplay/:value', (req, res) => {
@@ -1373,10 +1453,10 @@ app.get('/set/arcade/freeplay/:value', (req, res) => {
             console.log(`Global free_play is ${(req.params.value === "enable") ? "enabled" : "disabled"}`)
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/cooldown/:tap/:min', (req, res) => {
@@ -1390,10 +1470,10 @@ app.get('/set/arcade/cooldown/:tap/:min', (req, res) => {
             console.log(`Global cool down is ${db.cooldown_trigger} per ${db.cooldown_min}min`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/antihog/:tap/:min', (req, res) => {
@@ -1407,10 +1487,10 @@ app.get('/set/arcade/antihog/:tap/:min', (req, res) => {
             console.log(`Global antihog is ${db.cooldown_trigger} credits per ${db.cooldown_min}min`);
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 app.get('/set/arcade/japanese/:value', (req, res) => {
@@ -1423,10 +1503,10 @@ app.get('/set/arcade/japanese/:value', (req, res) => {
             console.log("Global VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"))
         } catch (e) {
             console.error("Failed to read cards database", e)
-            res.status(500).end();
+            res.status(500).send('Server Error');
         }
     } else {
-        res.status(500).end();
+        res.status(500).send('Server Error');
     }
 });
 
