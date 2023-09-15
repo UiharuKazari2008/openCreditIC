@@ -128,7 +128,7 @@ function getUser() {
                 $("#findUserModal").modal("hide");
                 if (userId || cardId) {
                     $('#userDataDiv').html(res);
-                    $("#showUserModel").modal("hide");
+                    $("#showUserModel").modal("show");
                 } else {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
@@ -141,7 +141,7 @@ function getUser() {
                             $("#waitForCardScanModal").modal("hide");
                             if (xhr.status === 200) {
                                 $('#userDataDiv').html(res);
-                                $("#showUserModel").modal("hide");
+                                $("#showUserModel").modal("show");
                             } else {
                                 alert(res);
                             }
