@@ -22,13 +22,11 @@ I hold no responsibility if you use this in a buiness as of the time of writing 
 * Credit Deposit History
 
 ## TODO
-* Web Interface
 * VFD RS232 Communication (Currently requires AMaverlousDisplay)
 * Cleanup of Arduino Code
 * Separate config.h for Arduino
 * Card Reader check in
 * Encrypted communication
-* Login/API key for server
 
 ## Integrations
 Supports various other ACR developed Arcade solutions
@@ -47,7 +45,7 @@ Supports various other ACR developed Arcade solutions
 5. Create `config.json`
 ```json
 {
-  "arcade_name": "Playland Gau",
+  "arcade_name": "Arcade Name",
   "device_key": "API_KEY_FOR_CARD_READERS",
   "web_key": "WEB_ACCESS_API_KEY"
 }
