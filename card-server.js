@@ -466,6 +466,7 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                     case 'info_card':
                         if (db.cards[req.params.card] !== undefined) {
                             pendingResponse[(req.params.machine_id).toUpperCase()] = {
+                                status: true,
                                 id: db.cards[req.params.card].user,
                                 ...db.users[db.cards[req.params.card].user],
                                 cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
@@ -473,7 +474,6 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                                 topup_history:  history.topup_log[db.cards[req.params.card].user],
                             };
                             res.status(200).json({
-                                status: true,
                                 user_name: db.users[db.cards[req.params.card].user].name,
                                 cost: 0,
                                 balance: db.users[db.cards[req.params.card].user].credits,
