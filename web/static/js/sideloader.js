@@ -67,7 +67,7 @@ function registerUser() {
         cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
-                if (createUser || createCard) {
+                if (createCard) {
                     clearRegisterUser();
                 } else {
                     $("#waitForCardScanModal").modal("show");
