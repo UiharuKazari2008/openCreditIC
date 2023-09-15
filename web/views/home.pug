@@ -62,7 +62,6 @@ body.bg-dark.text-white
                     .dropdown-header Arcade Management
                     .dropdown-divider
                     a.dropdown-item(href='#' onclick='getFreePlay(); return false;') Free Play Settings
-                    a.dropdown-item(href='#' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
 
 
         div.mt-3.col-sm-6
@@ -155,15 +154,13 @@ body.bg-dark.text-white
         div.modal-dialog.text-dark
             div.modal-content
                 div.modal-header.text-white.py-2.bg-info
-                    h5.modal-title Customer Info
+                    h5.modal-title Free Play Config
                     button.close(type='button', data-dismiss='modal')
                         span &times;
                 div#freeplayDataDiv.modal-body
 
                 div.modal-footer
-                    button.btn.btn-secondary(type='button' onclick='addCardToUser(); return false;').mr-auto
-                        i.fas.fa-plus.pr-2
-                        span Card
+                    button.btn.btn-danger.mr-auto(type='button' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
                     button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Close
     div.modal#depositModal(tabindex='-1' role='dialog')
         div.modal-dialog.text-dark
