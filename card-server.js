@@ -27,6 +27,9 @@ let pendingTimeout;
 let pendingScan = {
 
 };
+let pendingResponse = {
+
+};
 
 let saveTimeout
 function saveDatabase() {
@@ -408,6 +411,7 @@ app.get('/get/user/:user', (req, res) => {
             if (db.users[req.params.user] !== undefined) {
                 let user = db.users[req.params.user];
                 res.status(200).json({
+                    id: req.params.user,
                     ...user,
                     cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === req.params.user),
                     history:  history.dispense_log[req.params.user],
@@ -424,6 +428,26 @@ app.get('/get/user/:user', (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+app.get('/get/scan/:machine_id', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            pendingScan[(req.params.machine_id).toUpperCase()] = {
+                command: "info_card",
+                data: {
+                }
+            }
+            clearTimeout(pendingTimeout);
+            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
+            console.log(`New Pending Card for card data`, pendingScan[(req.params.machine_id).toUpperCase()])
+            res.status(200).send(`Waiting for card to be scanned for data`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/get/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -431,6 +455,7 @@ app.get('/get/card/:card', (req, res) => {
                 db.users[db.cards[req.params.card].user] !== undefined) {
                 let user = db.users[db.cards[req.params.card].user];
                 res.status(200).json({
+                    id: db.cards[req.params.card].user,
                     ...user,
                     cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
                     history:  history.dispense_log[db.cards[req.params.card].user],
@@ -642,6 +667,25 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             res.status(400).send("Card Already Exists!");
                         }
                         break;
+                    case 'info_card':
+                        pendingResponse[(req.params.machine_id).toUpperCase()] = {
+                            id: db.cards[req.params.card].user,
+                            ...db.users[db.cards[req.params.card].user],
+                            cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
+                            history:  history.dispense_log[db.cards[req.params.card].user],
+                            topup_history:  history.topup_log[db.cards[req.params.card].user],
+                        };
+                        res.status(200).json({
+                            user_name: db.users[db.cards[req.params.card].user].name,
+                            cost: 0,
+                            balance: db.users[db.cards[req.params.card].user].credits,
+                            free_play: true,
+                            status: true,
+                            currency_mode: !!(db.credit_to_currency_rate),
+                            currency_rate: db.credit_to_currency_rate,
+                            japanese: !!((machine && machine.jpn) || db.jpn)
+                        });
+                        break;
                     default:
                         if (db.cards[req.params.card] !== undefined &&
                             db.users[db.cards[req.params.card].user]) {
@@ -749,6 +793,50 @@ app.get('/wait_pending/:machine_id', async (req, res) => {
                 console.log(`Waiting for card scan...`)
                 if (!(pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command)) {
                     res.status(200).send('Request Completed');
+                }
+            })
+        }
+    } else {
+        res.status(404).send("No pending scan requests");
+    }
+})
+app.get('/wait_data/:machine_id', async (req, res) => {
+    if (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
+        let i = 0;
+        while (i <= 31) {
+            await sleep(1000).then(() => {
+                console.log(`Waiting for response...`)
+                if (!(pendingResponse[(req.params.machine_id).toUpperCase()])) {
+                    res.status(200).json(pendingResponse[(req.params.machine_id).toUpperCase()]);
+                    delete pendingResponse[(req.params.machine_id).toUpperCase()]
+                    i = 50;
+                    break;
+                } else if (i >= 30) {
+                    res.status(500).render("Timeout Waiting for data");
+                } else {
+                    i++
+                }
+            })
+        }
+    } else {
+        res.status(404).send("No pending scan requests");
+    }
+})
+app.get('/wait_render/:view/:machine_id', async (req, res) => {
+    if (pendingScan[(req.params.machine_id).toUpperCase()] && pendingScan[(req.params.machine_id).toUpperCase()].command) {
+        let i = 0;
+        while (i <= 31) {
+            await sleep(1000).then(() => {
+                console.log(`Waiting for response...`)
+                if (!(pendingResponse[(req.params.machine_id).toUpperCase()])) {
+                    res.status(200).render(req.params.view, pendingResponse[(req.params.machine_id).toUpperCase()]);
+                    delete pendingResponse[(req.params.machine_id).toUpperCase()]
+                    i = 50;
+                    break;
+                } else if (i >= 30) {
+                    res.status(500).render("Timeout Waiting for data");
+                } else {
+                    i++
                 }
             })
         }

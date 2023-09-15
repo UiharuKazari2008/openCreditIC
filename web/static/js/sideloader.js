@@ -96,6 +96,69 @@ function registerUser() {
     });
     return false
 }
+function getUser() {
+    const model = $('#showUserModel')
+    let userId = false;
+    let cardId = false;
+    let request = new URLSearchParams();
+    let machineID = document.getElementById('posTerminal').value;
+    try {
+        const userID = document.getElementById('findCustomerID').value
+        if (userID && userID.trim().length > 0)
+            userId = userID.trim();
+    } catch (e) {
+        console.error(`Failed to parse user info`, e)
+    }
+    try {
+        const cardSN = document.getElementById('findCardNumber').value
+        if (cardSN && cardSN.trim().length > 0)
+            cardId = cardSN.trim();
+    } catch (e) {
+        console.error(`Failed to parse card info`, e)
+    }
+    const url = `/get/${(userId) ? ('user/' + userId) : (cardId) ? ('card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
+    $.ajax({
+        type: "GET",
+        url, data: '',
+        processData: false,
+        contentType: false,
+        cache: false,
+        success: function (res, txt, xhr) {
+            if (xhr.status === 200) {
+                $("#findUserModal").modal("hide");
+                if (userId || cardId) {
+                    $('#userDataDiv').html(res)
+                } else {
+                    $("#waitForCardScanModal").modal("show");
+                    $.ajax({
+                        type: "GET",
+                        url: `/wait_render/user-data/${machineID}`,
+                        timeout: 60000, data: '',
+                        processData: false,
+                        contentType: false,
+                        success: function (res, txt, xhr) {
+                            $("#waitForCardScanModal").modal("hide");
+                            if (xhr.status === 200) {
+                                $('#userDataDiv').html(res)
+                            } else {
+                                alert(res);
+                            }
+                        },
+                        error: function () {
+                            alert(`Request Timeout`);
+                        },
+                    });
+                }
+            } else {
+                alert(res)
+            }
+        },
+        error: function (xhr) {
+            alert(`Failure: ${xhr.responseText}`)
+        },
+    });
+    return false
+}
 function depositCredits() {
     const model = $('#depositModal')
     let userID = false
@@ -326,4 +389,11 @@ function clearDepositCredits() {
     document.getElementById('depositBalance').value = '';
     document.getElementById('depositUser').value = '';
     document.getElementById('depositCard').value = '';
+}
+function clearUser() {
+    $("#findUserModal").modal("hide");
+    $("#showUserModel").modal("hide");
+    document.getElementById('findCustomerID').value = '';
+    document.getElementById('findCardNumber').value = '';
+    $('#userDataDiv').html('<span></span>')
 }

@@ -42,8 +42,7 @@ body.bg-dark.text-white
                 .dropdown-menu
                     .dropdown-header Manage Customers
                     .dropdown-divider
-                    a.dropdown-item(href='#').disabled Find Customer
-                    a.dropdown-item(href='#').disabled Update Customer
+                    a.dropdown-item(href='#', data-toggle='modal', data-target='#findUserModal').disabled Get/Update Customer
                     a.dropdown-item(href='#' onclick='transferCard(); return false;') Card Transfer
                     a.dropdown-item(href='#').disabled Add Additional Card
                     a.dropdown-item.text-danger(href='#' onclick='cardAction("/delete/scan/card"); return false;') Delete Card
@@ -109,6 +108,35 @@ body.bg-dark.text-white
                 div.modal-footer
                     button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
                     button.btn.btn-primary(type='submit' onclick='registerUser(); return false;') Create
+    div.modal#findUserModal(tabindex='-1' role='dialog')
+        div.modal-dialog.text-dark
+            div.modal-content
+                div.modal-header.bg-info.text-white.py-2
+                    h5.modal-title Select Customer
+                    button.close(type='button', data-dismiss='modal')
+                        span &times;
+                div.modal-body
+                    .form-group
+                        label(for='findCustomerID') Customer ID:
+                        input#findCustomerID.form-control(type='text', name='findCustomerID', placeholder="Leave blank to scan card")
+                    .form-group
+                        label(for='findCardNumber') Card Serial Number:
+                        input#findCardNumber.form-control(type='text', name='findCardNumber', placeholder="Leave blank to Scan card")
+                div.modal-footer
+                    button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Cancel
+                    button.btn.btn-primary(type='submit' onclick='getUser(); return false;') Lookup/Scan Card
+    div.modal#showUserModel(tabindex='-1' role='dialog')
+        div.modal-dialog.text-dark
+            div.modal-content
+                div.modal-header.text-white.py-2.bg-info
+                    h5.modal-title Customer Info
+                    button.close(type='button', data-dismiss='modal')
+                        span &times;
+                div#userDataDiv.modal-body
+
+                div.modal-footer
+                    button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
+                    button.btn.btn-primary(type='submit' onclick='updateUser(); return false;') Update
     div.modal#depositModal(tabindex='-1' role='dialog')
         div.modal-dialog.text-dark
             div.modal-content
