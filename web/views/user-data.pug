@@ -7,7 +7,10 @@
             label(for='showFreePlayUser') Free Play:
             .btn-group-toggle(data-toggle='buttons')
                 label.btn.btn-success.active
-                    input#showFreePlayUser(type='checkbox' `${(free_play === true) ? 'checked' : ''}` autocomplete='off')
+                    if (free_play)
+                        input#showFreePlayUser(type='checkbox' checked='' autocomplete='off')
+                    else
+                        input#showFreePlayUser(type='checkbox' autocomplete='off')
                     | Free Play
     .card
         #headerUserInfoShow.card-header
