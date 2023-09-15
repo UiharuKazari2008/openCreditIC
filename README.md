@@ -57,6 +57,8 @@ Supports various other ACR developed Arcade solutions
 }
 ```
 5. `node ./card-server.js`
+6. Configure your arcade using the Configuration section
+7. Open the web interface `http://localhost:1777/?key=WEB_ACCESS_API_KEY`
 
 Use something like pm2 or systemd to run as a daemon 
 
@@ -157,7 +159,8 @@ Any Optional hardware can be ommited and the reader will work the same
 * Build and Flash your card readers
 
 ## Configuration
-Use the following URLs to set settings with your server
+Use the following URLs to set settings with your server<br/>
+Add Commands need `key=API_KRY` to authenticate<br/>
 * `/set/arcade/cost/<NUMBER>`: Set Per Play Cost
   * `/set/machine/cost/<MAC_ADDRESS>/<NUMBER>` (Per Machine)
 * `/set/arcade/low_balance/<NUMBER>`: Set Low Balance Alert 
@@ -171,6 +174,9 @@ Use the following URLs to set settings with your server
   * `/set/machine/antihog/<Credits:NUMBER>/<Minutes:NUMBER>`: (Set Machine)
 * `/set/arcade/japanese/<enable or disable>`: Enable Japanese Text and Currency
   * `/set/machine/japanese/<MAC_ADDRESS>/<enable or disable>`: (Set Machine)
+* `/create/pos/<MAC_ADDRESS>`: Set up a POS reader
+  * `name=`: Reader Name
+  * `location=`: Reader Location
 
 ### Advanced
 * `/set/machine/vfd/<MAC_ADDRESS>/<VFD_IP>/<VFD_PORT>`: Set VFD connection
