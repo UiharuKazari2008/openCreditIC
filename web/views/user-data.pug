@@ -1,7 +1,10 @@
 #showUserAccordion
     .form-group
-        label(for='walletBalance') Wallet Balance:
-        input#walletBalance.form-control.form-control-lg(type='number', name='initialBalance', disabled, placeholder="0 Credits", value=credits)
+        label(for='showWalletBalance') Wallet Balance:
+        input#showWalletBalance.form-control.form-control-lg(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
+    .form-group
+        label(for='showFreePlayUser') Free Play:
+        input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play) ? 'checked' : ''}`)
     .card
         #headerUserInfoShow.card-header
             h5.mb-0
@@ -25,27 +28,27 @@
                 button.btn.btn-primary(type='submit' onclick='updateUserData(); return false;') Update
     for card in cards
         .card
-            .card-header(id=`cardHeader#{card.serial}`)
+            .card-header(id=`cardHeader${card.serial}`)
                 h5.mb-0.d-flex
-                    button.p-0.btn.btn-link.collapsed(data-toggle='collapse' data-target=`#cardData#{card.serial}` aria-expanded='false' aria-controls=`cardData#{card.serial}`)
+                    button.p-0.btn.btn-link.collapsed.mr-auto(data-toggle='collapse' data-target=`#cardData${card.serial}` aria-expanded='false' aria-controls=`cardData${card.serial}`)
                         div.d-flex.justify-content-center.mr-auto
                             div.d-flex.align-items-center.justify-content-center.pr-2
                                 i.fas.fa-credit-card
-                            span Card Info (#{card.serial})
+                            span Card Info (${card.serial})
                     a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-trash
                         span Delete
-            .collapse(id=`cardData#{card.serial}` aria-labelledby=`cardHeader#{card.serial}` data-parent='#showUserAccordion')
+            .collapse(id=`cardData${card.serial}` aria-labelledby=`cardHeader${card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group
-                        label(for=`cardNumber#{card.serial}`) Serial Number:
-                        input.form-control(id=`cardNumber#{card.serial}`, type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
+                        label(for=`cardNumber${card.serial}`) Serial Number:
+                        input.form-control(id=`cardNumber${card.serial}`, type='text', name='cardName', placeholder="CAN NOT BE BLANK", value=card.serial, disabled)
                     .form-group
-                        label(for=`cardName#{card.serial}`) Card Name:
-                        input.form-control(id=`cardName#{card.serial}`, type='text', name='cardName', placeholder="Friendly name for card", value=card.name)
+                        label(for=`cardName${card.serial}`) Card Name:
+                        input.form-control(id=`cardName${card.serial}`, type='text', name='cardName', placeholder="Friendly name for card", value=card.name)
                     .form-group
-                        label(for=`cardContact#{card.serial}`) Contact Info:
-                        input.form-control(id=`cardcontact#{card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
+                        label(for=`cardContact${card.serial}`) Contact Info:
+                        input.form-control(id=`cardcontact${card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
 
-                    button.btn.btn-primary(type='submit' onclick='updateCardData("#{card.serial}"); return false;') Update
+                    button.btn.btn-primary(type='submit' onclick='updateCardData("${card.serial}"); return false;') Update
