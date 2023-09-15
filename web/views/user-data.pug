@@ -14,7 +14,7 @@
                             i.fas.fa-user-cog
                         span Customer Info
                 if (locked)
-                    a.btn.bg-secondary(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-dark.mr-2
+                    a.btn.bg-secondary(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
                         div.d-flex.align-items-center.justify-content-center
                             i.fas.fa-lock-open
                         span.pl-2.d-none.d-sm-inline Unlock
@@ -53,7 +53,7 @@
                                 i.fas.fa-credit-card
                             span.pl-2.d-none.d-inline Card Info (#{card.serial})
                     if (card.locked)
-                        a.btn.bg-secondary(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/disable")`).d-flex.text-dark.mr-2
+                        a.btn.bg-secondary(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/disable")`).d-flex.text-white.mr-2
                             div.d-flex.align-items-center.justify-content-center
                                 i.fas.fa-lock-open
                             span.pl-2.d-none.d-sm-inline Unlock
