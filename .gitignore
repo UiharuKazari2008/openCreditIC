@@ -1,3 +1,5 @@
 /cards.json
 /history.json
 /config.json
+/CardReader-Game/config.h
+/CardReader-POS/config.h
