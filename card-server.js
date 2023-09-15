@@ -1,4 +1,5 @@
 const fs = require("fs");
+const config = require('./config.json');
 const express = require('express');
 const app = express();
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
@@ -70,7 +71,8 @@ app.get('/', (req, res) => {
     res.status(200).render('home', {
         pendingScan,
         db,
-        pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true)
+        pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
+        config
     });
 });
 app.use('/static', express.static('./web/static', ));
@@ -1585,6 +1587,27 @@ app.get('/get/machine/:machine_id', (req, res) => {
     }
 });
 // Arcade Management
+app.get('/get/free_play', (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.cost = parseFloat(req.params.cost)
+            res.status(200).render('free_play-config', {
+                arcade: db.free_play,
+                machines: Object.entries(db.machines).map(e => {
+                    return {
+                        id: e[0],
+                        ...e[1]
+                    }
+                })
+            });
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/set/arcade/cost/:cost', (req, res) => {
     if (db.cards && db.users) {
         try {

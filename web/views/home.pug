@@ -1,5 +1,18 @@
 head
-    title openCreditIC Management
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge')
+    meta(name='viewport', content='width=device-width, initial-scale=1, shrink-to-fit=yes, viewport-fit=cover, user-scalable=no')
+    meta(name='description', content='Arcade IC Card Management')
+    meta(name='author', content='Yukimi Kazari')
+    meta(name="apple-mobile-web-app-capable" content="yes")
+    meta(name="apple-mobile-web-app-title" content="OCI")
+    meta(name="apple-mobile-web-app-status-bar-style" content="black-translucent")
+    meta(content="OCI" property="og:title")
+    meta(content="Arcade IC Card Management" property="og:description")
+    meta(content=`${config.arcade_name} OCI` property="og:site_name")
+
+    title #{config.arcade_name} OCI
+
     link(rel='stylesheet', href='/static/css/bootstrap.min.css')
     link(rel='stylesheet', href='/static/css/fontawesome.min.css')
     link(rel='stylesheet', href='/static/css/all.min.css')
@@ -11,19 +24,19 @@ head
 body.bg-dark.text-white
     div.container.text-center
         h1 openCreditIC Manager
-        div.btn-group-vertical.mt-5.col-sm-6
+        div.btn-group-vertical.mt-5.col-lg-7
             div.w-100
                 .form-group
                     select#posTerminal.form-control.form-control-lg(name='posTerminal')
                         each machine in pos_terminals
                             option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
-            div.btn-group.btn-group-lg
-                a.btn.btn-success.rounded-left(href='#', data-toggle='modal', data-target='#newCardModal').w-50
+            div.btn-group.btn-group-lg.flex-column.flex-sm-row.bg-success.rounded
+                a.btn(href='#', data-toggle='modal', data-target='#newCardModal').py-4.col.text-white
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-credit-card
                         span Register
-                a.btn.btn-success.rounded-right(href='#', data-toggle='modal', data-target='#depositModal').w-50
+                a.btn(href='#', data-toggle='modal', data-target='#depositModal').py-4.col.text-white
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-coins

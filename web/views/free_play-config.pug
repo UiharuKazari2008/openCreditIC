@@ -1,0 +1,20 @@
+#showFreePlayAccordion
+    .form-group
+        label(for='showFreePlayGlobal') Global:
+        .btn-group-toggle(data-toggle='buttons')
+            label.btn.btn-lg.w-100.freeplay(class=`${(arcade) ? 'active' : ''}`)
+                if (arcade)
+                    input#showFreePlayGlobal(type='checkbox' checked='' autocomplete='off')
+                else
+                    input#showFreePlayGlobal(type='checkbox' autocomplete='off')
+                i.fas.fa-circle-check
+    for machine in machines
+        .form-group
+            label(for=`showFreePlay${machine.id}`) #{(machine.name) ? machine.name : machine.id}:
+            .btn-group-toggle(data-toggle='buttons')
+                label.btn.btn-lg.w-100.freeplay(class=`${(machine.free_play) ? 'active' : ''}`)
+                    if (machine.free_play)
+                        input(id=`showFreePlay${machine.id}` type='checkbox' checked='' autocomplete='off')
+                    else
+                        input(id=`showFreePlay${machine.id}` type='checkbox' autocomplete='off')
+                    i.fas.fa-circle-check
