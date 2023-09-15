@@ -38,10 +38,11 @@
                     i.fas.fa-lock
                 span.pl-2.d-none.d-sm-inline Lock
 
-        //a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
-            div.d-flex.align-items-center.justify-content-center
-                i.fas.fa-trash
-            span.pl-2.d-none.d-sm-inline Delete
+        if (show_delete_actions)
+            a.btn.bg-danger(href="#" onclick=`generalAction("/delete/user/${id}")`).d-flex.text-white
+                div.d-flex.align-items-center.justify-content-center
+                    i.fas.fa-trash
+                span.pl-2.d-none.d-sm-inline Delete
 
     for card in cards
         .card
@@ -62,10 +63,11 @@
                             div.d-flex.align-items-center.justify-content-center
                                 i.fas.fa-lock
                             span.pl-2.d-none.d-sm-inline Lock
-                    //a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
-                        div.d-flex.align-items-center.justify-content-center
-                            i.fas.fa-trash
-                        span.pl-2.d-none.d-sm-inline Delete
+                    if (show_delete_actions)
+                        a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
+                            div.d-flex.align-items-center.justify-content-center
+                                i.fas.fa-trash
+                            span.pl-2.d-none.d-sm-inline Delete
             .collapse(id=`cardData${card.serial}` aria-labelledby=`cardHeader${card.serial}` data-parent='#showUserAccordion')
                 .card-body
                     .form-group

@@ -717,6 +717,7 @@ app.get('/get/rendered/user/:user', manageAuth, (req, res) => {
                     cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === req.params.user),
                     history:  history.dispense_log[req.params.user],
                     topup_history:  history.topup_log[req.params.user],
+                    show_delete_actions: config.show_delete_actions
                 });
             } else {
                 res.status(404).send("Unknown User");
@@ -785,6 +786,7 @@ app.get('/get/rendered/card/:card', manageAuth, (req, res) => {
                     cards: Object.entries(db.cards).map(e => { return { serial: e[0], ...e[1] }}).filter(e => e.user === db.cards[req.params.card].user),
                     history:  history.dispense_log[db.cards[req.params.card].user],
                     topup_history:  history.topup_log[db.cards[req.params.card].user],
+                    show_delete_actions: config.show_delete_actions
                 });
             } else {
                 res.status(404).send("Unknown Card");
@@ -880,7 +882,7 @@ app.get('/wait_data/:machine_id', async (req, res) => {
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
                 } else if (i >= 30) {
-                    res.status(500).render("Timeout Waiting for data");
+                    res.status(500).send("Timeout Waiting for data");
                 } else {
                     i++
                 }
@@ -897,11 +899,14 @@ app.get('/wait_render/:view/:machine_id', async (req, res) => {
             await sleep(1000).then(() => {
                 console.log(`Waiting for response...`)
                 if (pendingResponse[(req.params.machine_id).toUpperCase()]) {
-                    res.status(200).render(req.params.view, pendingResponse[(req.params.machine_id).toUpperCase()]);
+                    res.status(200).render(req.params.view, {
+                        ...pendingResponse[(req.params.machine_id).toUpperCase()],
+                        show_delete_actions: config.show_delete_actions
+                    });
                     delete pendingResponse[(req.params.machine_id).toUpperCase()]
                     i = 50;
                 } else if (i >= 30) {
-                    res.status(500).render("Timeout Waiting for data");
+                    res.status(500).send("Timeout Waiting for data");
                 } else {
                     i++
                 }

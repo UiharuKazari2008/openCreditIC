@@ -47,7 +47,8 @@ Supports various other ACR developed Arcade solutions
 {
   "arcade_name": "Arcade Name",
   "device_key": "API_KEY_FOR_CARD_READERS",
-  "web_key": "WEB_ACCESS_API_KEY"
+  "web_key": "WEB_ACCESS_API_KEY",
+  "show_delete_actions": false
 }
 ```
 6. `node ./card-server.js`
