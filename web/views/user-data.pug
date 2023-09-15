@@ -7,12 +7,23 @@
         input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play === true) ? 'checked' : ''}`)
     .card
         #headerUserInfoShow.card-header
-            h5.mb-0
-                button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseUserInfoShow' aria-expanded='true' aria-controls='collapseUserInfoShow')
+            h5.mb-0.d-flex
+                button.p-0.btn.btn-link.mr-auto(data-toggle='collapse' data-target='#collapseUserInfoShow' aria-expanded='true' aria-controls='collapseUserInfoShow')
                     div.d-flex.justify-content-center
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-user-cog
                         span Customer Info
+                if (card.locked)
+                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/disable")`).d-flex.text-white.mr-2
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-lock-open
+                        span Unlock
+                else
+                    a.btn.bg-warning(href="#" onclick=`generalAction("/set/user/lock/${id}/enable")`).d-flex.text-white.mr-2
+                        div.d-flex.align-items-center.justify-content-center.pr-2
+                            i.fas.fa-lock
+                        span Lock
+
         #collapseUserInfoShow.collapse.show(aria-labelledby='headerUserInfoShow' data-parent='#showUserAccordion')
             .card-body
                 .form-group
@@ -25,7 +36,8 @@
                     label(for='showUserContact') Contact Info:
                     input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
 
-                button.btn.btn-primary(type='submit' onclick='updateUserData(); return false;') Update
+                button.btn.btn-primary.ml-auto(type='submit' onclick='updateUserData(); return false;') Update
+
     for card in cards
         .card
             .card-header(id=`cardHeader${card.serial}`)
@@ -35,6 +47,16 @@
                             div.d-flex.align-items-center.justify-content-center.pr-2
                                 i.fas.fa-credit-card
                             span Card Info (#{card.serial})
+                    if (card.locked)
+                        a.btn.bg-warning(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/disable")`).d-flex.text-white.mr-2
+                            div.d-flex.align-items-center.justify-content-center.pr-2
+                                i.fas.fa-lock-open
+                            span Unlock
+                    else
+                        a.btn.bg-warning(href="#" onclick=`generalAction("/set/card/lock/${card.serial}/enable")`).d-flex.text-white.mr-2
+                            div.d-flex.align-items-center.justify-content-center.pr-2
+                                i.fas.fa-lock
+                            span Lock
                     a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-trash

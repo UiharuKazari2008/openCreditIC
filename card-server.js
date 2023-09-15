@@ -1154,7 +1154,7 @@ app.get('/delete/card/:card', (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
-                delete db.cards[req.params.user];
+                delete db.cards[req.params.card];
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 res.status(200).send(`Card Deleted ${req.params.card}`);
