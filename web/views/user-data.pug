@@ -1,10 +1,11 @@
 #showUserAccordion
-    .form-group
-        label(for='showWalletBalance') Wallet Balance:
-        input#showWalletBalance.form-control.form-control-lg(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
-    .form-group
-        label(for='showFreePlayUser') Free Play:
-        input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play === true) ? 'checked' : ''}`)
+    div
+        .form-group.col
+            label(for='showWalletBalance') Wallet Balance:
+            input#showWalletBalance.form-control.form-control-lg(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
+        .form-group.col
+            label(for='showFreePlayUser') Free Play:
+            input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play === true) ? 'checked' : ''}`)
     .card
         #headerUserInfoShow.card-header
             h5.mb-0.d-flex
@@ -41,7 +42,7 @@
                     label(for='showUserContact') Contact Info:
                     input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
 
-                button.btn.btn-primary.ml-auto(type='submit' onclick='updateUserData(); return false;') Update
+                button.btn.btn-primary.ml-auto.w-100(type='submit' onclick='updateUserData(); return false;') Update
 
     for card in cards
         .card
@@ -78,4 +79,4 @@
                         label(for=`cardContact${card.serial}`) Contact Info:
                         input.form-control(id=`cardcontact${card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
 
-                    button.btn.btn-primary(type='submit' onclick='updateCardData("${card.serial}"); return false;') Update
+                    button.btn.btn-primary.w-100(type='submit' onclick='updateCardData("${card.serial}"); return false;') Update
