@@ -1,3 +1,4 @@
+const key = (new URLSearchParams(location.search)).get('key');
 function cancelRequest() {
     let machineID = document.getElementById('posTerminal').value;
     $.ajax({
@@ -5,7 +6,7 @@ function cancelRequest() {
         processData: false,
         contentType: false,
         cache: false,
-        url: `/cancel_pending/${machineID}`,
+        url: `/cancel_pending/${machineID}?key=${key}`,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("hide");
@@ -25,6 +26,7 @@ function registerUser() {
     let createUser = false
     let createCard = false
     let machineID = document.getElementById('posTerminal').value;
+    request.set('key', key);
     try {
         const val = parseFloat(document.getElementById('initialBalance').value)
         if (!isNaN(val) && val > 0)
@@ -73,7 +75,7 @@ function registerUser() {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}`,
+                        url: `/wait_pending/${machineID}?key=${key}`,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -99,6 +101,7 @@ function registerUser() {
 function updateUserData() {
     let request = new URLSearchParams();
     const showUserID = document.getElementById('showUserID').value;
+    request.set('key', key);
     try {
         const showFreePlayUser = document.getElementById('showFreePlayUser').checked;
         const showUserName = document.getElementById('showUserName').value;
@@ -148,6 +151,7 @@ function updateCardData(card_number) {
     } catch (e) {
         console.error(`Failed to parse user info`, e)
     }
+    request.set('key', key);
     const url = `/update/card/${card_number}?${request.toString()}`
     $.ajax({
         type: "GET",
@@ -173,6 +177,7 @@ function getUser() {
     let userId = false;
     let cardId = false;
     let request = new URLSearchParams();
+    request.set('key', key);
     let machineID = document.getElementById('posTerminal').value;
     try {
         const userID = document.getElementById('findCustomerID').value
@@ -205,7 +210,7 @@ function getUser() {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
                         type: "GET",
-                        url: `/wait_render/user-data/${machineID}`,
+                        url: `/wait_render/user-data/${machineID}?key=${key}`,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -236,7 +241,7 @@ function getUser() {
 function getFreePlay() {
     $.ajax({
         type: "GET",
-        url: "/get/free_play",
+        url: `/get/free_play?key=${key}`,
         data: '',
         processData: false,
         contentType: false,
@@ -282,7 +287,7 @@ function depositCredits() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}`
+    const url = `/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}?key=${key}`
     $.ajax({
         type: "GET",
         url, data: '',
@@ -297,7 +302,7 @@ function depositCredits() {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}`,
+                        url: `/wait_pending/${machineID}?key=${key}`,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -339,7 +344,7 @@ function freePlayUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}`
+    const url = `/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}?key=${key}`
     $.ajax({
         type: "GET",
         url,
@@ -351,7 +356,7 @@ function freePlayUser() {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}`,
+                        url: `/wait_pending/${machineID}?key=${key}`,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -376,7 +381,7 @@ function freePlayUser() {
 }
 function transferCard() {
     let machineID = document.getElementById('posTerminal').value;
-    const url = `/reassign/scan/${machineID}`
+    const url = `/reassign/scan/${machineID}?key=${key}`
     $.ajax({
         type: "GET",
         url, data: '',
@@ -388,7 +393,7 @@ function transferCard() {
                 $("#waitForCardScanModal").modal("show");
                 $.ajax({
                     type: "GET",
-                    url: `/wait_pending/${machineID}`,
+                    url: `/wait_pending/${machineID}?key=${key}`,
                     timeout: 60000, data: '',
                     processData: false,
                     contentType: false,
@@ -414,7 +419,7 @@ function cardAction(url) {
     let machineID = document.getElementById('posTerminal').value;
     $.ajax({
         type: "GET",
-        url: url + '/' + machineID,
+        url: `${url}/${machineID}?key=${key}`,
         data: '',
         processData: false,
         contentType: false,
@@ -424,7 +429,7 @@ function cardAction(url) {
                 $("#waitForCardScanModal").modal("show");
                 $.ajax({
                     type: "GET",
-                    url: `/wait_pending/${machineID}`,
+                    url: `/wait_pending/${machineID}?key=${key}`,
                     timeout: 60000, data: '',
                     processData: false,
                     contentType: false,
@@ -452,7 +457,7 @@ function addCardToUser() {
         const userID = document.getElementById('showUserID').value;
         $.ajax({
             type: "GET",
-            url: '/register/scan/' + machineID + '/' + userID,
+            url: `/register/scan/${machineID}/${userID}?key=${key}`,
             data: '',
             processData: false,
             contentType: false,
@@ -462,7 +467,7 @@ function addCardToUser() {
                     $("#waitForCardScanModal").modal("show");
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}`,
+                        url: `/wait_pending/${machineID}?key=${key}`,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -490,7 +495,7 @@ function addCardToUser() {
 function setFreeplay(url, machine_id) {
     $.ajax({
         type: "GET",
-        url: url + ((machine_id) ? machine_id + '/' : '') + ((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'disable' : 'enable'),
+        url: `${url}${((machine_id) ? machine_id + '/' : '')}${((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'disable' : 'enable')}?key=${key}`,
         data: '',
         processData: false,
         contentType: false,
@@ -511,7 +516,7 @@ function setFreeplay(url, machine_id) {
 function generalAction(url) {
     $.ajax({
         type: "GET",
-        url,
+        url: `${url}?key=${key}`,
         data: '',
         processData: false,
         contentType: false,
@@ -530,7 +535,7 @@ function generalAction(url) {
     return false
 }
 function clearAllFreeplay() {
-    const url = `/disable_freeplay/user`
+    const url = `/disable_freeplay/user?key=${key}`
     $.ajax({
         type: "GET",
         url, data: '',
