@@ -728,8 +728,8 @@ app.get('/callback/:machine_id/:card', (req, res) => {
                             user_name: db.users[db.cards[req.params.card].user].name,
                             cost: 0,
                             balance: db.users[db.cards[req.params.card].user].credits,
-                            free_play: true,
-                            status: true,
+                            free_play: db.users[db.cards[req.params.card].user].free_play,
+                            status: false,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
                             japanese: !!((machine && machine.jpn) || db.jpn)
