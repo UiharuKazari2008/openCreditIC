@@ -4,7 +4,7 @@
         input#showWalletBalance.form-control.form-control-lg(type='number', name='showWalletBalance', disabled, placeholder="0 Credits", value=credits)
     .form-group
         label(for='showFreePlayUser') Free Play:
-        input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play) ? 'checked' : ''}`)
+        input#showFreePlayUser.form-control.form-control-lg(type='checkbox', name='showFreePlayUser', placeholder="0 Credits", value=`${(free_play === true) ? 'checked' : ''}`)
     .card
         #headerUserInfoShow.card-header
             h5.mb-0
@@ -34,7 +34,7 @@
                         div.d-flex.justify-content-center.mr-auto
                             div.d-flex.align-items-center.justify-content-center.pr-2
                                 i.fas.fa-credit-card
-                            span Card Info (${card.serial})
+                            span Card Info (#{card.serial})
                     a.btn.bg-danger(href="#" onclick=`generalAction("/delete/card/${card.serial}")`).d-flex.text-white
                         div.d-flex.align-items-center.justify-content-center.pr-2
                             i.fas.fa-trash
