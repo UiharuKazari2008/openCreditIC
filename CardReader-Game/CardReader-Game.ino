@@ -152,19 +152,19 @@ void loop() {
         standbyScreen();
       }
     }
-  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false && enableState == 1 && waitingForUnblock == false) {
+  } else if (digitalRead(BLOCK_PIN) == LOW && blockState == 1) {
+    waitingForUnblock = false;
+    handleUnblocking();
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false && enableState == 1 && blockState == 0 && waitingForUnblock == false) {
     lastButtonState = true;
     altScreen();
-  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
+  } else if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == true && blockState == 0 && enableState == 1 && waitingForUnblock == false) {
 
-  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && enableState == 1 && waitingForUnblock == false) {
+  } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true && blockState == 0 && enableState == 1 && waitingForUnblock == false) {
     lastButtonState = false;
     standbyScreen();
   } else if (digitalRead(BLOCK_PIN) == HIGH && blockOverride == 0) {
     handleBlocked(false, "");
-  } else if (digitalRead(BLOCK_PIN) == LOW && blockState == 1) {
-    waitingForUnblock = false;
-    handleUnblocking();
   }
   checkWiFiConnection();
   server.handleClient();
@@ -568,9 +568,10 @@ void handleBlocked(bool force, String uid) {
       waitingForUnblock = true;
       delay(15000);
     }
-  } else if (waitingForUnblock == true && digitalRead(BLOCK_PIN) == HIGH) {
-    blockState = 1;
+  } else if (waitingForUnblock == true) {
+
   } else if (sys_callbackOnBlockedTap == true) {
+    blockState = 1;
     handleAltStandby();
   } else if (blockState == 0 || force == true) {
     blockState = 1;

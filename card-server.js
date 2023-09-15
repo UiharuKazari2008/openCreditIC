@@ -92,12 +92,22 @@ function manageAuth(req, res, next) {
 app.set('view engine', 'pug');
 app.set('views', './web/views');
 app.get('/', manageAuth, (req, res) => {
-    res.status(200).render('home', {
-        pendingScan,
-        db,
-        pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
-        config
-    });
+    if (req.header("Seq-BaseURL")) {
+        res.status(200).render('home-seqapp', {
+            baseUrl: req.header("Seq-BaseURL"),
+            pendingScan,
+            db,
+            pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
+            config
+        });
+    } else {
+        res.status(200).render('home', {
+            pendingScan,
+            db,
+            pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
+            config
+        });
+    }
 });
 app.use('/static', express.static('./web/static', ));
 app.use('/ui_static', express.static('./ui_images', ));

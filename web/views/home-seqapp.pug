@@ -1,0 +1,203 @@
+doctype html
+head
+    meta(charset='utf-8')
+    title OCI Manager
+
+body(style="overflow-x: hidden;")
+    div
+        div#appStatic
+            link(rel='stylesheet', href=`${baseUrl}static/css/custom-seq.css`)
+            style.
+                .background-image:not(.overlay) {
+                    background-image: url("!{baseUrl}/assets/img/seq-bg.jpg");
+                }
+            script(src=`${baseUrl}static/js/sideloader.js`)
+        div#appPanels
+
+        div#appStaticPost
+            div.modal#newCardModal(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-header.bg-success.text-white.py-2
+                            h5.modal-title Register Customer
+                            button.close(type='button', data-dismiss='modal')
+                                span &times;
+                        div.modal-body
+                            #registerAccordion
+                                .form-group
+                                    label(for='initialBalance') Initial Balance:
+                                    input#initialBalance.form-control.form-control-lg(type='number', name='initialBalance', placeholder="0 Credits")
+                                .card
+                                    #headerUserInfo.card-header
+                                        h5.mb-0
+                                            button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseUserInfo' aria-expanded='true' aria-controls='collapseUserInfo')
+                                                div.d-flex.justify-content-center
+                                                    div.d-flex.align-items-center.justify-content-center.pr-2
+                                                        i.fas.fa-user-cog
+                                                    span Customer Info
+                                    #collapseUserInfo.collapse.show(aria-labelledby='headerUserInfo' data-parent='#registerAccordion')
+                                        .card-body
+                                            .form-group
+                                                label(for='userID') Customer ID:
+                                                input#userID.form-control(type='text', name='cardName', placeholder="Leave blank for random")
+                                            .form-group
+                                                label(for='userName') Customer Name:
+                                                input#userName.form-control(type='text', name='cardName', placeholder="Customer Name")
+                                            .form-group
+                                                label(for='userContact') Contact Info:
+                                                input#userContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.")
+                                .card
+                                    #headingTwo.card-header
+                                        h5.mb-0
+                                            button.p-0.btn.btn-link.collapsed(data-toggle='collapse' data-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
+                                                div.d-flex.justify-content-center
+                                                    div.d-flex.align-items-center.justify-content-center.pr-2
+                                                        i.fas.fa-credit-card
+                                                    span Card Info
+                                    #collapseTwo.collapse(aria-labelledby='headingTwo' data-parent='#registerAccordion')
+                                        .card-body
+                                            .form-group
+                                                label(for='cardName') Serial Number:
+                                                input#cardNum.form-control(type='text', name='cardName', placeholder="Leave blank to Scan")
+                                            .form-group
+                                                label(for='cardName') Card Name:
+                                                input#cardName.form-control(type='text', name='cardName', placeholder="Friendly name for card")
+                                            .form-group
+                                                label(for='cardName') Contact Info:
+                                                input#cardContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.")
+                        div.modal-footer
+                            button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
+                            button.btn.btn-primary(type='submit' onclick='registerUser(); return false;') Create
+            div.modal#findUserModal(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-header.bg-info.text-white.py-2
+                            h5.modal-title Select Customer
+                            button.close(type='button', data-dismiss='modal')
+                                span &times;
+                        div.modal-body
+                            .form-group
+                                label(for='findCustomerID') Customer ID:
+                                input#findCustomerID.form-control(type='text', name='findCustomerID', placeholder="Leave blank to scan card")
+                            .form-group
+                                label(for='findCardNumber') Card Serial Number:
+                                input#findCardNumber.form-control(type='text', name='findCardNumber', placeholder="Leave blank to Scan card")
+                        div.modal-footer
+                            button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Cancel
+                            button.btn.btn-primary(type='submit' onclick='getUser(); return false;') Lookup/Scan Card
+            div.modal#showUserModel(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-header.text-white.py-2.bg-info
+                            h5.modal-title Customer Info
+                            button.close(type='button', data-dismiss='modal')
+                                span &times;
+                        div#userDataDiv.modal-body
+
+                        div.modal-footer
+                            button.btn.btn-secondary(type='button' onclick='addCardToUser(); return false;').mr-auto
+                                i.fas.fa-plus.pr-2
+                                span Card
+                            button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Close
+            div.modal#showFreePlayModel(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-header.text-white.py-2.bg-info
+                            h5.modal-title Free Play Config
+                            button.close(type='button', data-dismiss='modal')
+                                span &times;
+                        div#freeplayDataDiv.modal-body
+
+                        div.modal-footer
+                            button.btn.btn-danger.mr-auto(type='button' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
+                            button.btn.btn-secondary(type='button' data-dismiss='modal') Close
+            div.modal#depositModal(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-header.bg-success.text-white.py-2
+                            h5.modal-title Deposit Credits
+                            button.close(type='button', data-dismiss='modal')
+                                span &times;
+                        div.modal-body
+                            #depositAccordion
+                                .form-group
+                                    label(for='initialBalance') Credits:
+                                    input#depositBalance.form-control.form-control-lg(type='number', name='depositBalance', placeholder="0 Credits")
+                                .card
+                                    #headerDepositAdv.card-header
+                                        h5.mb-0
+                                            button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseCardInfo' aria-expanded='true' aria-controls='collapseCardInfo')
+                                                div.d-flex.justify-content-center
+                                                    div.d-flex.align-items-center.justify-content-center.pr-2
+                                                        i.fas.fa-user-cog
+                                                    span Advanced
+                                    #collapseCardInfo.collapse(aria-labelledby='headerDepositAdv' data-parent='#depositAccordion')
+                                        .card-body
+                                            p
+                                                | Use this section to deposit to a specific user ID or card serial number without scanning
+                                            .form-group
+                                                label(for='cardName') User ID:
+                                                input#depositUser.form-control(type='text', name='cardName', placeholder="Leave blank for random")
+                                            .form-group
+                                                label(for='cardName') Card S/N:
+                                                input#depositCard.form-control(type='text', name='cardName', placeholder="Users Name")
+                        div.modal-footer
+                            button.btn.btn-success(type='button' onclick='freePlayUser(); return false;').mr-auto Free Play
+                            button.btn.btn-secondary(type='button' onclick='clearDepositCredits(); return false;') Cancel
+                            button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Create
+            div.modal#waitForCardScanModal.bg-dark(tabindex='-1' role='dialog')
+                div.modal-dialog.text-dark
+                    div.modal-content
+                        div.modal-body.align-items-center.d-flex.flex-column.text-white.bg-danger
+                            div.d-flex.flex-row
+                                i.fab.fa-5x.fa-nfc-symbol
+                            div.d-flex.flex-row.mt-2
+                                span Scan card now!
+                            div.d-flex
+                                button.btn.btn-secondary.mt-3(type='button' onclick='cancelRequest(); return false;') Cancel
+        div#appTitleBar
+            i.far.mr-2.fa-credit-card-front
+            span.text-uppercase OCI Manager
+
+        div#appNavigation
+            a.bottomBtn.btn.btn-lg.btn-circle.red(href='#', data-toggle='modal', data-target='#newCardModal')
+                i.fas.plus
+            a.bottomBtn.btn.btn-lg.btn-circle.red(href='#', data-toggle='modal', data-target='#depositModal')
+                i.fas.fa-coins
+
+        div#appMenuRow2Grid
+            a.user-menu-item(href='#', data-toggle='modal', data-target='#newCardModal')
+                i.fa-light.fa-credit-card.fa-fw
+                span Register
+            a.user-menu-item(href='#', data-toggle='modal', data-target='#depositModal')
+                i.fa-light.fa-coins.fa-fw
+                | Deposit
+            a.user-menu-item(href='#')
+                i.fa-light.fa-scroll.fa-fw
+                | Books
+            a.user-menu-item(href='#', data-toggle='modal', data-target='#findUserModal')
+                i.fa-light.fa-money-check-dollar-pen.fa-fw
+                | Customers
+            a.user-menu-item(href='#' onclick='transferCard(); return false;')
+                i.fa-light.fa-cards-blank.fa-fw
+                | Transfer
+            a.user-menu-item(href='#' onclick='getFreePlay(); return false;')
+                i.fa-light.fa-hand-holding-dollar.fa-fw
+                | Free Play
+
+
+
+
+        div#appContent
+            div
+                .pt-3
+                    .row.p-3
+                        .col-xl-3.col-md-6
+                            div.w-100
+                                h1.mt-5 #{config.arcade_name}
+                            div.w-100
+                                .form-group
+                                    select#posTerminal.form-control.form-control-lg(name='posTerminal')
+                                        each machine in pos_terminals
+                                            option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
+

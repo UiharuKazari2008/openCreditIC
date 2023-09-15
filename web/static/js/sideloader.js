@@ -1,12 +1,19 @@
-const key = (new URLSearchParams(location.search)).get('key');
+const searchParams = new URLSearchParams(document.location.search);
+const key = (typeof SEQ_APP_URL !== 'undefined') ? false : (searchParams.has('key')) ? searchParams.get('key') : false
 function cancelRequest() {
     let machineID = document.getElementById('posTerminal').value;
+    let _url = new URL(`${document.location.origin}/cancel_pending/${machineID}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
+
     $.ajax({
         type: "GET", data: '',
         processData: false,
         contentType: false,
         cache: false,
-        url: `/cancel_pending/${machineID}?key=${key}`,
+        url: _url,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("hide");
@@ -22,15 +29,17 @@ function cancelRequest() {
 }
 function registerUser() {
     const model = $('#newCardModal')
-    let request = new URLSearchParams();
+    let _url = new URL(`${document.location.origin}`);
+    if (key)
+        _url.searchParams.set('key', key);
     let createUser = false
     let createCard = false
     let machineID = document.getElementById('posTerminal').value;
-    request.set('key', key);
+    _url.searchParams.set('key', key);
     try {
         const val = parseFloat(document.getElementById('initialBalance').value)
         if (!isNaN(val) && val > 0)
-            request.set('credits', val.toString())
+            _url.searchParams.set('credits', val.toString())
     } catch (e) {
         console.error(`Failed to parse balance`, e)
     }
@@ -41,9 +50,9 @@ function registerUser() {
         if (userID && userID.trim().length > 0)
             createUser = userID.trim();
         if (userName && userName.trim().length > 0)
-            request.set('user_name', encodeURIComponent(userName.trim()));
+            _url.searchParams.set('user_name', encodeURIComponent(userName.trim()));
         if (userContact && userContact.trim().length > 0)
-            request.set('user_contact', encodeURIComponent(userContact.trim()));
+            _url.searchParams.set('user_contact', encodeURIComponent(userContact.trim()));
     } catch (e) {
         console.error(`Failed to parse user info`, e)
     }
@@ -54,16 +63,16 @@ function registerUser() {
         if (cardSN && cardSN.trim().length > 0)
             createCard = cardSN.trim();
         if (cardName && cardName.trim().length > 0)
-            request.set('card_name', encodeURIComponent(cardName.trim()));
+            _url.searchParams.set('card_name', encodeURIComponent(cardName.trim()));
         if (cardContact && cardContact.trim().length > 0)
-            request.set('card_contact', encodeURIComponent(cardContact.trim()));
+            _url.searchParams.set('card_contact', encodeURIComponent(cardContact.trim()));
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}?${request.toString()}`
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL : '/') + `register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}`;
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
@@ -73,9 +82,15 @@ function registerUser() {
                     clearRegisterUser();
                 } else {
                     $("#waitForCardScanModal").modal("show");
+                    let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                    if (typeof SEQ_APP_URL !== 'undefined')
+                        _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                    if (key)
+                        _url2.searchParams.set('key', key);
+
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}?key=${key}`,
+                        url: _url2,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -99,28 +114,30 @@ function registerUser() {
     return false
 }
 function updateUserData() {
-    let request = new URLSearchParams();
     const showUserID = document.getElementById('showUserID').value;
-    request.set('key', key);
+    let _url = new URL(`${document.location.origin}/update/user/${showUserID}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     try {
         const showFreePlayUser = document.getElementById('showFreePlayUser').checked;
         const showUserName = document.getElementById('showUserName').value;
         const showUserContact = document.getElementById('showUserContact').value;
         if (showFreePlayUser)
-            request.set('free_play', showFreePlayUser.toString())
+            _url.searchParams.set('free_play', showFreePlayUser.toString())
         if (showUserName && showUserName.trim().length > 0) {
-            request.set('user_name', encodeURIComponent(showUserName.trim()));
+            _url.searchParams.set('user_name', encodeURIComponent(showUserName.trim()));
         }
         if (showUserContact && showUserContact.trim().length > 0) {
-            request.set('user_contact', encodeURIComponent(showUserContact.trim()));
+            _url.searchParams.set('user_contact', encodeURIComponent(showUserContact.trim()));
         }
     } catch (e) {
         console.error(`Failed to parse user info`, e)
     }
-    const url = `/update/user/${showUserID}?${request.toString()}`
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
@@ -138,24 +155,26 @@ function updateUserData() {
     return false
 }
 function updateCardData(card_number) {
-    let request = new URLSearchParams();
+    let _url = new URL(`${document.location.origin}/update/card/${card_number}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     try {
         const showCardName = document.getElementById('cardName' + card_number).value;
         const showCardContact = document.getElementById('cardContact' + card_number).value;
         if (showCardName && showCardName.trim().length > 0) {
-            request.set('card_name', encodeURIComponent(showCardName.trim()));
+            _url.searchParams.set('card_name', encodeURIComponent(showCardName.trim()));
         }
         if (showCardContact && showCardContact.trim().length > 0) {
-            request.set('card_contact', encodeURIComponent(showCardContact.trim()));
+            _url.searchParams.set('card_contact', encodeURIComponent(showCardContact.trim()));
         }
     } catch (e) {
         console.error(`Failed to parse user info`, e)
     }
-    request.set('key', key);
-    const url = `/update/card/${card_number}?${request.toString()}`
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
@@ -173,11 +192,12 @@ function updateCardData(card_number) {
     return false
 }
 function getUser() {
+    let _url = new URL(`${document.location.origin}`);
+    if (key)
+        _url.searchParams.set('key', key);
     const model = $('#showUserModel')
     let userId = false;
     let cardId = false;
-    let request = new URLSearchParams();
-    request.set('key', key);
     let machineID = document.getElementById('posTerminal').value;
     try {
         const userID = document.getElementById('findCustomerID').value
@@ -193,10 +213,10 @@ function getUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL :  '/') + `get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
@@ -208,9 +228,14 @@ function getUser() {
                     $("#showUserModel").modal("show");
                 } else {
                     $("#waitForCardScanModal").modal("show");
+                    let _url2 = new URL(`${document.location.origin}/wait_render/user-data/${machineID}`);
+                    if (typeof SEQ_APP_URL !== 'undefined')
+                        _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                    if (key)
+                        _url2.searchParams.set('key', key);
                     $.ajax({
                         type: "GET",
-                        url: `/wait_render/user-data/${machineID}?key=${key}`,
+                        url: _url2,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -239,9 +264,14 @@ function getUser() {
     return false
 }
 function getFreePlay() {
+    let _url = new URL(`${document.location.origin}/get/free_play`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url: `/get/free_play?key=${key}`,
+        url: _url,
         data: '',
         processData: false,
         contentType: false,
@@ -287,10 +317,14 @@ function depositCredits() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}?key=${key}`
+    let _url = new URL(`${document.location.origin}/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
@@ -344,10 +378,14 @@ function freePlayUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    const url = `/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}?key=${key}`
+    let _url = new URL(`${document.location.origin}/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url,
+        url: _url,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 if (userID || cardID) {
@@ -381,19 +419,28 @@ function freePlayUser() {
 }
 function transferCard() {
     let machineID = document.getElementById('posTerminal').value;
-    const url = `/reassign/scan/${machineID}?key=${key}`
+    let _url = new URL(`${document.location.origin}/reassign/scan/${machineID}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("show");
+                let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                if (typeof SEQ_APP_URL !== 'undefined')
+                    _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                if (key)
+                    _url2.searchParams.set('key', key);
                 $.ajax({
                     type: "GET",
-                    url: `/wait_pending/${machineID}?key=${key}`,
+                    url: _url2,
                     timeout: 60000, data: '',
                     processData: false,
                     contentType: false,
@@ -417,9 +464,14 @@ function transferCard() {
 }
 function cardAction(url) {
     let machineID = document.getElementById('posTerminal').value;
+    let _url = new URL(`${document.location.origin}${url}/${machineID}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url: `${url}/${machineID}?key=${key}`,
+        url: _url,
         data: '',
         processData: false,
         contentType: false,
@@ -427,9 +479,14 @@ function cardAction(url) {
         success: function (res, txt, xhr) {
             if (xhr.status === 200) {
                 $("#waitForCardScanModal").modal("show");
+                let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                if (typeof SEQ_APP_URL !== 'undefined')
+                    _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                if (key)
+                    _url2.searchParams.set('key', key);
                 $.ajax({
                     type: "GET",
-                    url: `/wait_pending/${machineID}?key=${key}`,
+                    url: _url2,
                     timeout: 60000, data: '',
                     processData: false,
                     contentType: false,
@@ -455,9 +512,14 @@ function addCardToUser() {
     let machineID = document.getElementById('posTerminal').value;
     if (document.getElementById('showUserID') !== undefined) {
         const userID = document.getElementById('showUserID').value;
+        let _url = new URL(`${document.location.origin}/register/scan/${machineID}/${userID}`);
+        if (typeof SEQ_APP_URL !== 'undefined')
+            _url.pathname = SEQ_APP_URL + _url.pathname;
+        if (key)
+            _url.searchParams.set('key', key);
         $.ajax({
             type: "GET",
-            url: `/register/scan/${machineID}/${userID}?key=${key}`,
+            url: _url,
             data: '',
             processData: false,
             contentType: false,
@@ -465,9 +527,14 @@ function addCardToUser() {
             success: function (res, txt, xhr) {
                 if (xhr.status === 200) {
                     $("#waitForCardScanModal").modal("show");
+                    let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                    if (typeof SEQ_APP_URL !== 'undefined')
+                        _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                    if (key)
+                        _url2.searchParams.set('key', key);
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}?key=${key}`,
+                        url: _url2,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -493,9 +560,14 @@ function addCardToUser() {
     return false
 }
 function setFreeplay(url, machine_id) {
+    let _url = new URL(`${document.location.origin}${url}${((machine_id) ? machine_id + '/' : '')}${((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'disable' : 'enable')}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url: `${url}${((machine_id) ? machine_id + '/' : '')}${((document.getElementById(('showFreePlay' + ((machine_id) ? machine_id : 'Global'))).checked) ? 'disable' : 'enable')}?key=${key}`,
+        url: _url,
         data: '',
         processData: false,
         contentType: false,
@@ -514,9 +586,15 @@ function setFreeplay(url, machine_id) {
     return false
 }
 function generalAction(url) {
+    let _url = new URL(`${document.location.origin}${url}`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
+
     $.ajax({
         type: "GET",
-        url: `${url}?key=${key}`,
+        url: _url,
         data: '',
         processData: false,
         contentType: false,
@@ -535,10 +613,14 @@ function generalAction(url) {
     return false
 }
 function clearAllFreeplay() {
-    const url = `/disable_freeplay/user?key=${key}`
+    let _url = new URL(`${document.location.origin}/disable_freeplay/user`);
+    if (typeof SEQ_APP_URL !== 'undefined')
+        _url.pathname = SEQ_APP_URL + _url.pathname;
+    if (key)
+        _url.searchParams.set('key', key);
     $.ajax({
         type: "GET",
-        url, data: '',
+        url: _url, data: '',
         processData: false,
         contentType: false,
         cache: false,
