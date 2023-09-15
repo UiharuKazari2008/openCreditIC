@@ -78,4 +78,4 @@
                         label(for=`cardContact${card.serial}`) Contact Info:
                         input.form-control(id=`cardcontact${card.serial}`, type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=card.contact)
 
-                    button.btn.btn-primary.w-100(type='submit' onclick='updateCardData("${card.serial}"); return false;') Update
+                    button.btn.btn-primary.w-100(type='submit' onclick=`updateCardData("${card.serial}"); return false;`) Update
