@@ -199,7 +199,7 @@ void handleLoop() {
     Serial.println("Check in");
     getConfig(false);
   }
-  if (digitalRead(BLOCK_PIN) == LOW && blockOverride == 0) {
+  if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
     // Game Enabled
     if (blockState == 1) {
       // Was Previouly Blocked
@@ -210,10 +210,12 @@ void handleLoop() {
       displayDisableReader();
     } else {
       // Enabled by Admin
-      if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false) {
+      if (digitalRead(BUTTON_PIN) == LOW) {
         // Button is being pressed
-        lastButtonState = true;
-        displayButtonDisplayEnabled();
+        if (lastButtonState == false) {
+          lastButtonState = true;
+          displayButtonDisplayEnabled();
+        }
       } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
         // Button was released
         lastButtonState = false;
@@ -237,10 +239,12 @@ void handleLoop() {
       sleepDevice();
     } else {
       // Enabled by Admin
-      if (digitalRead(BUTTON_PIN) == LOW && lastButtonState == false) {
+      if (digitalRead(BUTTON_PIN) == LOW) {
         // Button is being pressed
-        lastButtonState = true;
-        displayButtonDisplayDisabled();
+        if (lastButtonState == false) {
+          lastButtonState = true;
+          displayButtonDisplayDisabled();
+        }
       } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
         // Button was released
         lastButtonState = false;
@@ -258,7 +262,7 @@ void handleLoop() {
 // Handle Card Scanner
 void handleCardRead() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-    if (digitalRead(BLOCK_PIN) == HIGH) {
+    if (blockState == 1) {
       if (sys_callbackOnBlockedTap == true) {
         String uid = getUID();
         handleBlockedCallback(uid);
@@ -322,6 +326,7 @@ void handleBlockedCallback(String uid) {
       delay(15000);
     } else {
       Serial.println("Unauthorized Card");
+      delay(1000);
     }
   }
 }
@@ -606,14 +611,19 @@ void displayCommunicationError() {
 void bootScreen(String input_message) {
   displayState = -1;
   u8g2.clearBuffer();
+  u8g2.setDrawColor(1);
   u8g2.drawXBM(0, 0, bootLogo_w, bootLogo_h, bootLogo);
+  u8g2.sendBuffer();
+  u8g2.setDrawColor(0);
+  u8g2.setColorIndex(0);
   u8g2.setFont(u8g2_font_HelvetiPixel_tr); // Choose your font
   const char* string = input_message.c_str();
   int textWidth = u8g2.getStrWidth(string);
-  int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
-  int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
-  int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  int centerX = ((u8g2.getWidth() - textWidth) / 2);
+  int centerGlX = ((u8g2.getWidth() - textWidth) / 2);
+  int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2 + 15;
   u8g2.drawStr(centerX, centerY, string);
+  u8g2.setColorIndex(1);
   u8g2.sendBuffer();
 }
 // Display "Game Over" on Reader Disable - DS 55
