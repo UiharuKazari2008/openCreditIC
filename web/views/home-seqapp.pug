@@ -190,40 +190,38 @@ body(style="overflow-x: hidden;")
 
         div#appContent
             div
-                .pt-3
-                    .row.p-3
-                        .col-xl-3.col-md-6
-                            div.w-100
-                                h1 #{config.arcade_name}
-                            div.w-100
-                                .form-group
-                                    select#posTerminal.form-control.form-control-lg(name='posTerminal')
-                                        each machine in pos_terminals
-                                            option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
-                            div.w-100
-                                each machine in machine_dispense
-                                    .col-xl-4.col-md-6.mb-3
-                                        .card.text-white(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-gray-900'}`)
-                                            .row.card-header.align-items-center.m-0.d-flex.bg-transparent
-                                                .col.small.text-white.d-flex.p-0.align-items-center
-                                                    i.fas.fa-joystick(style="padding-right: 0.5em")
-                                                    span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
-                                                .col-auto.d-flex.p-0.align-items-center
-                                            .card-body.position-relative.w-100.h-100(style=`padding: 0.7em;`)
-                                                div
-                                                    i.fas.fa-user.pr-2
-                                                    span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
-                                                div
-                                                    i.fas.fa-money-bill.pr-2
-                                                    if (machine.last.free_play)
-                                                        div.badge.badge-success
-                                                            span Free Play
-                                                    else
-                                                        div.badge.badge-info
-                                                            if (db.currency_rate)
-                                                                i.fas.fa-yen-sign.pr-2
-                                                            span #{(db.currency_rate) ? machine.last.cost * db.currency_rate : machine.last.cost}
-                                                div
-                                                    i.fas.fa-clock-four.pr-2
-                                                    span #{machine.last.time_pretty}
+                .p-3
+                    div.w-100
+                        h1 #{config.arcade_name}
+                    div.w-100
+                        .form-group
+                            select#posTerminal.form-control.form-control-lg(name='posTerminal')
+                                each machine in pos_terminals
+                                    option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
+                    div.w-100
+                        each machine in machine_dispense
+                            .col-xl-4.col-md-6.mb-3
+                                .card.text-white(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-gray-900'}`)
+                                    .row.card-header.align-items-center.m-0.d-flex.bg-transparent
+                                        .col.small.text-white.d-flex.p-0.align-items-center
+                                            i.fas.fa-joystick(style="padding-right: 0.5em")
+                                            span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
+                                        .col-auto.d-flex.p-0.align-items-center
+                                    .card-body.position-relative.w-100.h-100(style=`padding: 0.7em;`)
+                                        div
+                                            i.fas.fa-user.pr-2
+                                            span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
+                                        div
+                                            i.fas.fa-money-bill.pr-2
+                                            if (machine.last.free_play)
+                                                div.badge.badge-success
+                                                    span Free Play
+                                            else
+                                                div.badge.badge-info
+                                                    if (db.currency_rate)
+                                                        i.fas.fa-yen-sign.pr-2
+                                                    span #{(db.currency_rate) ? machine.last.cost * db.currency_rate : machine.last.cost}
+                                        div
+                                            i.fas.fa-clock-four.pr-2
+                                            span #{machine.last.time_pretty}
 
