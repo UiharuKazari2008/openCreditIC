@@ -1161,7 +1161,7 @@ app.get('/set/card/lock/:card/:value', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined) {
-                db.cards[req.params.card].locked = true;
+                db.cards[req.params.card].locked = (req.params.value === "enable");
                 res.status(200).send("Card is " + ((req.params.value === "enable") ? "locked: " : "unlocked: ") + req.params.card);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
