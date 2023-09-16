@@ -1647,7 +1647,6 @@ app.get('/get/machine/:machine_id', readerAuth, (req, res) => {
 app.get('/get/free_play', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.cost = parseFloat(req.params.cost)
             res.status(200).render('free_play-config', {
                 arcade: db.free_play,
                 machines: Object.entries(db.machines).filter(e => !e[1].pos_mode).map(e => {
