@@ -120,6 +120,25 @@ function countUserSessionTotal(arr) {
 
     return count;
 }
+function getTotalSessiontime(count, arr) {
+    return arr[arr.length - 1].time - arr[arr.length - count].time
+}
+function msToTime(s,f) {
+    // Pad to 2 or 3 digits, default is 2
+    function pad(n, z) {
+        z = z || 2;
+        return ('00' + n).slice(-z);
+    }
+
+    var ms = s % 1000;
+    s = (s - ms) / 1000;
+    var secs = s % 60;
+    s = (s - secs) / 60;
+    var mins = s % 60;
+    var hrs = (s - mins) / 60;
+
+    return ((hrs > 0 || f) ? pad(hrs) + ':' : '') + pad(mins) + ':' + pad(secs) + ((f) ? '.' + pad(ms, 2) : '')
+}
 
 //polyfill shit
 delete history.machines_dispense
@@ -166,6 +185,7 @@ app.get('/', manageAuth, (req, res) => {
                         user_info: db.users[e[1][e[1].length - 1].user],
                         user_b2b: countItemsWithSameUser(e[1]),
                         user_total_profit: countUserSessionTotal(e[1]),
+                        user_total_time: getTotalSessiontime(countItemsWithSameUser(e[1]), e[1]),
                         time_pretty: pretty_date
                     }
                 }
