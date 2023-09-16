@@ -209,15 +209,28 @@ body(style="overflow-x: hidden;")
                                         .col-auto.d-flex.p-0.align-items-center
                                     .card-body.position-relative.w-100.h-100(style=`padding: 0.7em;`)
                                         div
+                                            i.fas.fa-users.pr-2
+                                            span #{machine.today.users.length}
+                                        if (machine.last.user_b2b > 1)
+                                        div
+                                            if (db.credit_to_currency_rate)
+                                                i.fas.fa-yen-sign.pr-1
+                                            else
+                                                i.fas.fa-coins
+                                            span / #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
+
+                                    .card-body.position-relative.w-100.h-100(style=`padding: 0.7em;`)
+                                        div
                                             i.fas.fa-user.pr-2
                                             span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
+                                        if (machine.last.user_b2b > 1)
+                                        div
+                                            i.fas.fa-chart-pie-simple-circle-dollar.pr-2
                                             div.badge.badge-success.text-gray-900.ml-2
-                                                span.pr-1 #{machine.last.user_b2b}
-                                                if (machine.last.user_b2b > 1)
-                                                    span.px-1 (#{machine.last.user_total_time}) /
+                                                span.pr-1 #{machine.last.user_b2b} (#{machine.last.user_total_time})
                                                 if (db.credit_to_currency_rate)
                                                     i.fas.fa-yen-sign.pr-1
-                                                span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
+                                                span / #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
                                         div.d-inline-flex.align-items-center
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)

@@ -177,9 +177,18 @@ app.get('/', manageAuth, (req, res) => {
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
                 const date = moment(new Date(e[1][e[1].length - 1].time))
                 const pretty_date = date.format("DD/MM HH:mm:ss")
+                const today = e[1].filter(e => e.time >= (Date.now().valueOf() - 24 * 60 * 60000))
+                let today_made = 0;
+                today.filter(e => !e.free_play).map(e => {
+                    today_made = today_made + e.cost
+                })
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
+                    today: {
+                        users: [...new Set(today.map(e => e.user))],
+                        profit: today_made,
+                    },
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
