@@ -201,8 +201,8 @@ body(style="overflow-x: hidden;")
                     div.w-100.row
                         each machine in machine_dispense
                             .col-xl-4.col-md-6.mb-3
-                                .card.text-white(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-gray-900'}`)
-                                    .row.card-header.align-items-center.m-0.d-flex.bg-transparent
+                                .card.text-white.bg-translucent
+                                    .row.card-header.align-items-center.m-0.d-flex(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
                                         .col.small.text-white.d-flex.p-0.align-items-center
                                             i.fas.fa-joystick(style="padding-right: 0.5em")
                                             span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
@@ -215,7 +215,7 @@ body(style="overflow-x: hidden;")
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)
                                                 div.badge.badge-success
-                                                    span Free Play
+                                                    span.font-weight-bold Free Play
                                             else
                                                 div.badge.badge-success
                                                     if (db.credit_to_currency_rate)
