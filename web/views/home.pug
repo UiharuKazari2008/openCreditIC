@@ -87,7 +87,7 @@ body.bg-dark.text-white
             each machine in machine_dispense
                 .col-xl-4.col-md-6.mb-3
                     .card.text-white.bg-dark
-                        .row.card-header.align-items-center.p-2.m-0.d-flex(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
+                        .row.card-header.align-items-center.p-2.m-0.d-flex(class=`${(machine.last.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
                             .col.small.text-white.d-flex.p-0.align-items-center
                                 i.fas.fa-gamepad(style="padding-right: 0.5em")
                                 span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
