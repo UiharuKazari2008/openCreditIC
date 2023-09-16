@@ -91,7 +91,7 @@ function manageAuth(req, res, next) {
 }
 function formatDate(inputDate) {
     // Get the day, month, hours, and minutes from the Date object
-    const day = inputDate.getDate();
+    const day = inputDate.getDay();
     const month = inputDate.getMonth() + 1; // Months are zero-based, so add 1
     const hours = inputDate.getHours();
     const minutes = inputDate.getMinutes();
