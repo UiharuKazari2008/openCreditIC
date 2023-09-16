@@ -9,7 +9,7 @@ body(style="overflow-x: hidden;")
             link(rel='stylesheet', href=`${baseUrl}static/css/custom-seq.css`)
             style.
                 .background-image:not(.overlay) {
-                    background-image: url("!{baseUrl}/assets/img/seq-bg.jpg");
+                    background-image: url("!{baseUrl}ui_static/background.jpg");
                 }
             script(src=`${baseUrl}static/js/sideloader.js`)
         div#appPanels
@@ -194,7 +194,7 @@ body(style="overflow-x: hidden;")
                     .row.p-3
                         .col-xl-3.col-md-6
                             div.w-100
-                                h1.mt-5 #{config.arcade_name}
+                                h1 #{config.arcade_name}
                             div.w-100
                                 .form-group
                                     select#posTerminal.form-control.form-control-lg(name='posTerminal')
