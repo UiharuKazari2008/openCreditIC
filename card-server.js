@@ -90,6 +90,36 @@ function manageAuth(req, res, next) {
         next();
     }
 }
+function countItemsWithSameUser(arr) {
+    let count = 1; // Initialize count to 1 for the last item
+    const lastId = arr[arr.length - 1].user; // Get the id of the last item
+
+    // Iterate in reverse order starting from the second-to-last item
+    for (let i = arr.length - 2; i >= 0; i--) {
+        if (arr[i].user === lastId) {
+            count++;
+        } else {
+            break; // Stop counting when a different id is found
+        }
+    }
+
+    return count;
+}
+function countUserSessionTotal(arr) {
+    let count = arr[arr.length - 1].cost; // Initialize count to 1 for the last item
+    const lastId = arr[arr.length - 1].user; // Get the id of the last item
+
+    // Iterate in reverse order starting from the second-to-last item
+    for (let i = arr.length - 2; i >= 0; i--) {
+        if (arr[i].user === lastId) {
+            count = count + array[i].cost;
+        } else {
+            break; // Stop counting when a different id is found
+        }
+    }
+
+    return count;
+}
 
 //polyfill shit
 delete history.machines_dispense
@@ -134,6 +164,8 @@ app.get('/', manageAuth, (req, res) => {
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
+                        user_b2b: countItemsWithSameUser(e[1]),
+                        user_total_profit: countUserSessionTotal(e[1]),
                         time_pretty: pretty_date
                     }
                 }

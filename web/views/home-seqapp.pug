@@ -202,7 +202,7 @@ body(style="overflow-x: hidden;")
                         each machine in machine_dispense
                             .col-xl-4.col-md-6.mb-3
                                 .card.text-white.bg-translucent
-                                    .row.card-header.align-items-center.m-0.d-flex(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
+                                    .row.card-header.align-items-center.p-2.m-0.d-flex(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
                                         .col.small.text-white.d-flex.p-0.align-items-center
                                             i.fas.fa-joystick(style="padding-right: 0.5em")
                                             span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
@@ -211,16 +211,21 @@ body(style="overflow-x: hidden;")
                                         div
                                             i.fas.fa-user.pr-2
                                             span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
+                                            div.badge.badge-success.text-gray-900.ml-2
+                                                span.pr-1 #{machine.last.user_b2b} /
+                                                if (db.credit_to_currency_rate)
+                                                    i.fas.fa-yen-sign.pr-1
+                                                span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
                                         div.d-inline-flex.align-items-center
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)
-                                                div.badge.badge-success.text-dark
+                                                div.badge.badge-success.text-gray-900
                                                     span.font-weight-bold Free Play
                                             else
-                                                div.badge.badge-success.text-dark
+                                                div.badge.badge-success.text-gray-900
                                                     if (db.credit_to_currency_rate)
                                                         i.fas.fa-yen-sign.pr-1
-                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credits')}
+                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credit(s)')}
                                         div
                                             i.fas.fa-clock-four.pr-2
                                             span #{machine.last.time_pretty}
