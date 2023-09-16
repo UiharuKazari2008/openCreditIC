@@ -131,7 +131,7 @@ app.get('/', manageAuth, (req, res) => {
                     info: db.machines[e[0]],
                     last: {
                         ...e[1][e[1].length - 1],
-                        time_pretty: moment(e[1][e[1].length - 1].time).format(config.clock.format || "HH:mm")
+                        time_pretty: (moment(e[1][e[1].length - 1].time)).format(config.clock.format || "HH:mm")
                     }
                 }
             })
@@ -149,7 +149,7 @@ app.get('/', manageAuth, (req, res) => {
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: moment(e[1][e[1].length - 1].time).format(config.clock.format || "HH:mm")
+                        time_pretty: (moment(e[1][e[1].length - 1].time)).format(config.clock.format || "HH:mm")
                     }
                 }
             })
