@@ -1,6 +1,7 @@
 const fs = require("fs");
 const config = require('./config.json');
 const express = require('express');
+const moment = require('moment');
 const app = express();
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
 const request = require('request').defaults({ encoding: null });
@@ -123,14 +124,35 @@ app.get('/', manageAuth, (req, res) => {
             pendingScan,
             db,
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
-            config
+            config,
+            machine_dispense: Object.entries(history.machines_dispense).map(e => {
+                return {
+                    id: e[0],
+                    info: db.machines[e[0]],
+                    last: {
+                        ...e[1][e[1].length - 1],
+                        time_pretty: moment(e[1][e[1].length - 1].time).format(config.clock.format || "HH:mm")
+                    }
+                }
+            })
         });
     } else {
         res.status(200).render('home', {
             pendingScan,
             db,
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
-            config
+            config,
+            machine_dispense: Object.entries(history.machines_dispense).map(e => {
+                return {
+                    id: e[0],
+                    info: db.machines[e[0]],
+                    last: {
+                        ...e[1][e[1].length - 1],
+                        user_info: db.users[e[1][e[1].length - 1].user],
+                        time_pretty: moment(e[1][e[1].length - 1].time).format(config.clock.format || "HH:mm")
+                    }
+                }
+            })
         });
     }
 });
