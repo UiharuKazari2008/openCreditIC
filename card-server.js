@@ -126,7 +126,7 @@ app.get('/', manageAuth, (req, res) => {
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
             config,
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
-                const date = moment(e[1][e[1].length - 1].time)
+                const date = moment().set("milliseconds", e[1][e[1].length - 1].time)
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
