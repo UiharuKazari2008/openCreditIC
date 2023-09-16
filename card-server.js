@@ -1,6 +1,7 @@
 const fs = require("fs");
 const config = require('./config.json');
 const express = require('express');
+const moment = require('moment');
 const app = express();
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
 const request = require('request').defaults({ encoding: null });
@@ -89,22 +90,6 @@ function manageAuth(req, res, next) {
         next();
     }
 }
-function formatDate(inputDate) {
-    // Get the day, month, hours, and minutes from the Date object
-    const day = inputDate.getDay();
-    const month = inputDate.getMonth() + 1; // Months are zero-based, so add 1
-    const hours = inputDate.getHours();
-    const minutes = inputDate.getMinutes();
-
-    // Pad single-digit day, month, hours, and minutes with leading zeros
-    const formattedDay = day < 10 ? `0${day}` : day;
-    const formattedMonth = month < 10 ? `0${month}` : month;
-    const formattedHours = hours < 10 ? `0${hours}` : hours;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-
-    // Construct the formatted date string
-    return `${formattedDay}/${formattedMonth} ${formattedHours}:${formattedMinutes}`;
-}
 
 //polyfill shit
 delete history.machines_dispense
@@ -141,13 +126,14 @@ app.get('/', manageAuth, (req, res) => {
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
             config,
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
+                const date = moment(new Date(e[1][e[1].length - 1].time))
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: formatDate(Date(e[1][e[1].length - 1].time))
+                        time_pretty: date.format(config.clock.format || "DD/MM HH:mm:ss")
                     }
                 }
             })
@@ -159,13 +145,14 @@ app.get('/', manageAuth, (req, res) => {
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
             config,
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
+                const date = moment(new Date(e[1][e[1].length - 1].time))
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: formatDate(Date(e[1][e[1].length - 1].time))
+                        time_pretty: date.format(config.clock.format || "DD/MM HH:mm:ss")
                     }
                 }
             })
