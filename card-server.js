@@ -105,6 +105,21 @@ function countItemsWithSameUser(arr) {
 
     return count;
 }
+function countItemsWithSameUserSession(arr) {
+    let count = 1; // Initialize count to 1 for the last item
+    const lastId = arr[arr.length - 1].user; // Get the id of the last item
+
+    // Iterate in reverse order starting from the second-to-last item
+    for (let i = arr.length - 2; i >= 0; i--) {
+        if (arr[i].user === lastId && (!arr[i + 1].time || (arr[i - 1].time && (arr[i + 1].time - arr[i].time <= (30 * 60000))))) {
+            count++;
+        } else {
+            break; // Stop counting when a different id is found
+        }
+    }
+
+    return count;
+}
 function countUserSessionTotal(arr) {
     let count = arr[arr.length - 1].cost; // Initialize count to 1 for the last item
     const lastId = arr[arr.length - 1].user; // Get the id of the last item
@@ -189,9 +204,9 @@ app.get('/', manageAuth, (req, res) => {
                 last: {
                     ...e[1][e[1].length - 1],
                     user_info: db.users[e[1][e[1].length - 1].user],
-                    user_b2b: countItemsWithSameUser(e[1]),
+                    user_b2b: countItemsWithSameUserSession(e[1]),
                     user_total_profit: countUserSessionTotal(e[1]),
-                    user_total_time: msToTime(getTotalSessiontime(countItemsWithSameUser(e[1]), e[1])),
+                    user_total_time: msToTime(getTotalSessiontime(countItemsWithSameUserSession(e[1]), e[1])),
                     time_pretty: pretty_date
                 }
             }
