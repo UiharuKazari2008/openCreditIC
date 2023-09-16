@@ -111,7 +111,7 @@ function countItemsWithSameUserSession(arr) {
 
     // Iterate in reverse order starting from the second-to-last item
     for (let i = arr.length - 2; i >= 0; i--) {
-        if (arr[i].user === lastId && (!arr[i + 1].time || (arr[i - 1].time && (arr[i + 1].time - arr[i].time <= (30 * 60000))))) {
+        if (arr[i].user === lastId && (!arr[i + 1].time || (arr[i - 1].time && (arr[i + 1].time - arr[i].time <= (60 * 60000))))) {
             count++;
         } else {
             break; // Stop counting when a different id is found
@@ -126,7 +126,7 @@ function countUserSessionTotal(arr) {
 
     // Iterate in reverse order starting from the second-to-last item
     for (let i = arr.length - 2; i >= 0; i--) {
-        if (arr[i].user === lastId && (!arr[i + 1].time || (arr[i - 1].time && (arr[i + 1].time - arr[i].time <= (30 * 60000))))) {
+        if (arr[i].user === lastId && (!arr[i + 1].time || (arr[i - 1].time && (arr[i + 1].time - arr[i].time <= (60 * 60000))))) {
             count = count + arr[i].cost;
         } else {
             break; // Stop counting when a different id is found
