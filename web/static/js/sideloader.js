@@ -69,7 +69,7 @@ function registerUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL : '/') + `register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}`;
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL : '') + `/register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}`;
     $.ajax({
         type: "GET",
         url: _url, data: '',
@@ -213,7 +213,7 @@ function getUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL :  '/') + `get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}`
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL :  '') + `/get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}`
     $.ajax({
         type: "GET",
         url: _url, data: '',
