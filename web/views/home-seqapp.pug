@@ -212,7 +212,9 @@ body(style="overflow-x: hidden;")
                                             i.fas.fa-user.pr-2
                                             span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
                                             div.badge.badge-success.text-gray-900.ml-2
-                                                span.pr-1 #{machine.last.user_b2b} /
+                                                span.pr-1 #{machine.last.user_b2b}
+                                                if (machine.last.user_b2b > 1)
+                                                    span.px-1 (#{machine.last.user_total_time}) /
                                                 if (db.credit_to_currency_rate)
                                                     i.fas.fa-yen-sign.pr-1
                                                 span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}

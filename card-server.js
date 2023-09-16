@@ -185,7 +185,7 @@ app.get('/', manageAuth, (req, res) => {
                         user_info: db.users[e[1][e[1].length - 1].user],
                         user_b2b: countItemsWithSameUser(e[1]),
                         user_total_profit: countUserSessionTotal(e[1]),
-                        user_total_time: getTotalSessiontime(countItemsWithSameUser(e[1]), e[1]),
+                        user_total_time: msToTime(getTotalSessiontime(countItemsWithSameUser(e[1]), e[1])),
                         time_pretty: pretty_date
                     }
                 }
