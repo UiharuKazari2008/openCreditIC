@@ -114,9 +114,6 @@ void loop() {
       String uid = getUID();
       Serial.print("Card Detected: ");
       handleBlocked(false, uid);
-    } else if (blockState == 1) {
-      waitingForUnblock = false;
-      handleUnblocking();
     } else if (enableState == 1) {
       // A new card is detected, read its UID.
       String uid = getUID();

@@ -273,7 +273,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                 })()
                 const isCooldown = (() => {
                     if (history.dispense_log[db.cards[req.params.card].user] && machine.antihog_trigger && machine.antihog_min) {
-                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.machine === (req.params.machine_id).toUpperCase());
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status && e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= machine.antihog_trigger)
                             return 0;
                         const cooldown_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
@@ -282,7 +282,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         return 3
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.antihog_trigger && db.antihog_min) {
-                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.machine === (req.params.machine_id).toUpperCase());
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status && e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= db.antihog_trigger)
                             return 0;
                         const cooldown_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
@@ -291,7 +291,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         return 2
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.cooldown_trigger && db.cooldown_min) {
-                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
                         if (dispense_log.length <= db.cooldown_trigger)
                             return 0;
                         const cooldown_target = dispense_log[dispense_log.length - db.cooldown_trigger].time;
