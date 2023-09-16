@@ -91,7 +91,7 @@ function manageAuth(req, res, next) {
 }
 
 //polyfill shit
-if (history.dispense_log && Object.keys(history.dispense_log) > 0) {
+if (!history.machines_dispense) {
     if (!history.machines_dispense)
         history.machines_dispense = {};
     Object.entries(history.dispense_log).map(u => {
