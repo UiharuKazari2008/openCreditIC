@@ -218,9 +218,9 @@ body(style="overflow-x: hidden;")
                                                     span Free Play
                                             else
                                                 div.badge.badge-info
-                                                    if (db.currency_rate)
+                                                    if (db.credit_to_currency_rate)
                                                         i.fas.fa-yen-sign.pr-2
-                                                    span #{(db.currency_rate) ? machine.last.cost * db.currency_rate : machine.last.cost}
+                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : machine.last.cost.toString()}
                                         div
                                             i.fas.fa-clock-four.pr-2
                                             span #{machine.last.time_pretty}
