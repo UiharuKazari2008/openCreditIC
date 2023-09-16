@@ -16,9 +16,9 @@ body(style="overflow-x: hidden;")
 
         div#appStaticPost
             div.modal#newCardModal(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+                div.modal-dialog
                     div.modal-content
-                        div.modal-header.bg-success.text-white.py-2
+                        div.modal-header.bg-success.py-2
                             h5.modal-title Register Customer
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
@@ -69,9 +69,9 @@ body(style="overflow-x: hidden;")
                             button.btn.btn-secondary(type='button' onclick='clearRegisterUser(); return false;') Cancel
                             button.btn.btn-primary(type='submit' onclick='registerUser(); return false;') Create
             div.modal#findUserModal(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+                div.modal-dialog
                     div.modal-content
-                        div.modal-header.bg-info.text-white.py-2
+                        div.modal-header.bg-info.py-2
                             h5.modal-title Select Customer
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
@@ -86,9 +86,9 @@ body(style="overflow-x: hidden;")
                             button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Cancel
                             button.btn.btn-primary(type='submit' onclick='getUser(); return false;') Lookup/Scan Card
             div.modal#showUserModel(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+                div.modal-dialog
                     div.modal-content
-                        div.modal-header.text-white.py-2.bg-info
+                        div.modal-header.py-2.bg-info
                             h5.modal-title Customer Info
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
@@ -100,9 +100,9 @@ body(style="overflow-x: hidden;")
                                 span Card
                             button.btn.btn-secondary(type='button' onclick='clearUser(); return false;') Close
             div.modal#showFreePlayModel(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+                div.modal-dialog
                     div.modal-content
-                        div.modal-header.text-white.py-2.bg-info
+                        div.modal-header.py-2.bg-info
                             h5.modal-title Free Play Config
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
@@ -112,9 +112,9 @@ body(style="overflow-x: hidden;")
                             button.btn.btn-danger.mr-auto(type='button' onclick='clearAllFreeplay(); return false;') Revoke All Customer(s) Free Play
                             button.btn.btn-secondary(type='button' data-dismiss='modal') Close
             div.modal#depositModal(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+                div.modal-dialog
                     div.modal-content
-                        div.modal-header.bg-success.text-white.py-2
+                        div.modal-header.bg-success.py-2
                             h5.modal-title Deposit Credits
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
@@ -145,10 +145,10 @@ body(style="overflow-x: hidden;")
                             button.btn.btn-success(type='button' onclick='freePlayUser(); return false;').mr-auto Free Play
                             button.btn.btn-secondary(type='button' onclick='clearDepositCredits(); return false;') Cancel
                             button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Create
-            div.modal#waitForCardScanModal.bg-dark(tabindex='-1' role='dialog')
-                div.modal-dialog.text-dark
+            div.modal#waitForCardScanModal(tabindex='-1' role='dialog')
+                div.modal-dialog
                     div.modal-content
-                        div.modal-body.align-items-center.d-flex.flex-column.text-white.bg-danger
+                        div.modal-body.align-items-center.d-flex.flex-column
                             div.d-flex.flex-row
                                 i.fab.fa-5x.fa-nfc-symbol
                             div.d-flex.flex-row.mt-2
@@ -161,7 +161,7 @@ body(style="overflow-x: hidden;")
 
         div#appNavigation
             a.bottomBtn.btn.btn-lg.btn-circle.red(href='#', data-toggle='modal', data-target='#newCardModal')
-                i.fas.plus
+                i.fas.fa-credit-card
             a.bottomBtn.btn.btn-lg.btn-circle.red(href='#', data-toggle='modal', data-target='#depositModal')
                 i.fas.fa-coins
 
