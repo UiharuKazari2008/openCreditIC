@@ -141,7 +141,6 @@ function msToTime(s,f) {
 }
 
 //polyfill shit
-delete history.machines_dispense
 if (!history.machines_dispense) {
     if (!history.machines_dispense)
         history.machines_dispense = {};
@@ -167,58 +166,44 @@ if (!history.machines_dispense) {
 app.set('view engine', 'pug');
 app.set('views', './web/views');
 app.get('/', manageAuth, (req, res) => {
+    const homepage_date = {
+        pendingScan,
+        db,
+        pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
+        config,
+        machine_dispense: Object.entries(history.machines_dispense).map(e => {
+            const date = moment(new Date(e[1][e[1].length - 1].time))
+            const pretty_date = date.format("DD/MM HH:mm:ss")
+            const today = e[1].filter(e => e.time >= (Date.now().valueOf() - 24 * 60 * 60000))
+            let today_made = 0;
+            today.filter(e => !e.free_play).map(e => {
+                today_made = today_made + e.cost
+            })
+            return {
+                id: e[0],
+                info: db.machines[e[0]],
+                today: {
+                    users: [...new Set(today.map(e => e.user))],
+                    profit: today_made,
+                },
+                last: {
+                    ...e[1][e[1].length - 1],
+                    user_info: db.users[e[1][e[1].length - 1].user],
+                    user_b2b: countItemsWithSameUser(e[1]),
+                    user_total_profit: countUserSessionTotal(e[1]),
+                    user_total_time: msToTime(getTotalSessiontime(countItemsWithSameUser(e[1]), e[1])),
+                    time_pretty: pretty_date
+                }
+            }
+        })
+    }
     if (req.header("Seq-BaseURL")) {
         res.status(200).render('home-seqapp', {
             baseUrl: req.header("Seq-BaseURL"),
-            pendingScan,
-            db,
-            pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
-            config,
-            machine_dispense: Object.entries(history.machines_dispense).map(e => {
-                const date = moment(new Date(e[1][e[1].length - 1].time))
-                const pretty_date = date.format("DD/MM HH:mm:ss")
-                const today = e[1].filter(e => e.time >= (Date.now().valueOf() - 24 * 60 * 60000))
-                let today_made = 0;
-                today.filter(e => !e.free_play).map(e => {
-                    today_made = today_made + e.cost
-                })
-                return {
-                    id: e[0],
-                    info: db.machines[e[0]],
-                    today: {
-                        users: [...new Set(today.map(e => e.user))],
-                        profit: today_made,
-                    },
-                    last: {
-                        ...e[1][e[1].length - 1],
-                        user_info: db.users[e[1][e[1].length - 1].user],
-                        user_b2b: countItemsWithSameUser(e[1]),
-                        user_total_profit: countUserSessionTotal(e[1]),
-                        user_total_time: msToTime(getTotalSessiontime(countItemsWithSameUser(e[1]), e[1])),
-                        time_pretty: pretty_date
-                    }
-                }
-            })
+            ...homepage_date
         });
     } else {
-        res.status(200).render('home', {
-            pendingScan,
-            db,
-            pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
-            config,
-            machine_dispense: Object.entries(history.machines_dispense).map(e => {
-                const date = moment(new Date(e[1][e[1].length - 1].time))
-                return {
-                    id: e[0],
-                    info: db.machines[e[0]],
-                    last: {
-                        ...e[1][e[1].length - 1],
-                        user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: date.format(config.clock.format || "DD/MM HH:mm:ss")
-                    }
-                }
-            })
-        });
+        res.status(200).render('home', homepage_date);
     }
 });
 app.use('/static', express.static('./web/static', ));

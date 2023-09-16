@@ -83,9 +83,50 @@ body.bg-dark.text-white
                     .dropdown-header Arcade Management
                     .dropdown-divider
                     a.dropdown-item(href='#' onclick='getFreePlay(); return false;') Free Play
+        div.w-100.mt-3.row
+            each machine in machine_dispense
+                .col-xl-4.col-md-6.mb-3
+                    .card.text-white.bg-translucent
+                        .row.card-header.align-items-center.p-2.m-0.d-flex(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-transparent text-dark'}`)
+                            .col.small.text-white.d-flex.p-0.align-items-center
+                                i.fas.fa-joystick(style="padding-right: 0.5em")
+                                span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
+                            .col-auto.d-flex.p-0.align-items-center
+                        .card-body.position-relative.w-100.h-100(style=`padding: 0.7em;`)
+                            div
+                                i.fas.fa-user.pr-2
+                                span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
+                            if (machine.last.user_b2b > 1)
+                                div
+                                    i.fas.fa-chart-pie-simple.pr-2
+                                    span.pr-1 #{machine.last.user_b2b}x (#{machine.last.user_total_time}) =
+                                    if (db.credit_to_currency_rate)
+                                        i.fas.fa-yen-sign.pr-1
+                                    span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
+                            div.d-inline-flex.align-items-center
+                                i.fas.fa-money-bill.pr-2
+                                if (machine.last.free_play)
+                                    div.badge.badge-success.text-gray-900
+                                        span.font-weight-bold Free Play
+                                else
+                                    if (db.credit_to_currency_rate)
+                                        i.fas.fa-yen-sign.pr-1
+                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credit(s)')}
+                            div
+                                i.fas.fa-clock-four.pr-2
+                                span #{machine.last.time_pretty}
 
-
-        div.mt-3.col-sm-6
+                        .card-footer.position-relative.w-100.h-100.bg-translucent.d-flex.justify-content-between.border-top-0(style=`padding: 0.7em;`)
+                            div
+                                i.fas.fa-users.pr-2
+                                span #{machine.today.users.length}
+                            if (machine.last.user_b2b > 1)
+                            div
+                                if (db.credit_to_currency_rate)
+                                    i.fas.fa-yen-sign.pr-1
+                                else
+                                    i.fas.fa-coins
+                                span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
 
     div.modal#newCardModal(tabindex='-1' role='dialog')
         div.modal-dialog.text-dark
