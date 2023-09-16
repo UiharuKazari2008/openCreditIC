@@ -1685,7 +1685,7 @@ app.get('/delete/machine/:machine_id', manageAuth, (req, res) => {
     }
 });
 app.get('/get/machine/dispense', manageAuth, (req, res) => {
-    if (db.cards && db.users) {
+    if (history.machines_dispense) {
         try {
             res.status(200).json(history.machines_dispense)
         } catch (e) {
