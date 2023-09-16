@@ -126,14 +126,14 @@ app.get('/', manageAuth, (req, res) => {
             pos_terminals: Object.entries(db.machines).filter(e => e[1].pos_mode === true),
             config,
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
-                const date = moment(Date(e[1][e[1].length - 1].time))
+                const date = Date(e[1][e[1].length - 1].time)
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: date.format(config.clock.format || "DD/MM HH:mm:ss")
+                        time_pretty: date
                     }
                 }
             })
