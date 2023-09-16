@@ -91,6 +91,7 @@ function manageAuth(req, res, next) {
 }
 
 //polyfill shit
+delete history.machines_dispense
 if (!history.machines_dispense) {
     if (!history.machines_dispense)
         history.machines_dispense = {};
@@ -106,7 +107,7 @@ if (!history.machines_dispense) {
     })
     for (const key in history.machines_dispense) {
         if (history.machines_dispense.hasOwnProperty(key)) {
-            history.machines_dispense = history.machines_dispense[key].sort((a, b) => a.time - b.time);
+            history.machines_dispense[key] = history.machines_dispense[key].sort((a, b) => a.time - b.time);
         }
     }
     console.log('Migrated Dispense Logs');
