@@ -198,7 +198,7 @@ body(style="overflow-x: hidden;")
                             select#posTerminal.form-control.form-control-lg(name='posTerminal')
                                 each machine in pos_terminals
                                     option(value=machine[0]) #{(machine[1].name) ? machine[1].name : machine[0]}#{(machine[1].location) ? ' (' + machine[1].location + ')' : ''}
-                    div.w-100
+                    div.w-100.row
                         each machine in machine_dispense
                             .col-xl-4.col-md-6.mb-3
                                 .card.text-white(class=`${(machine.time >= (Date.now().valueOf() - 60 * 60000)) ? 'bg-success' : 'bg-gray-900'}`)
@@ -211,15 +211,15 @@ body(style="overflow-x: hidden;")
                                         div
                                             i.fas.fa-user.pr-2
                                             span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
-                                        div
+                                        div.d-inline-flex.align-items-center
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)
                                                 div.badge.badge-success
                                                     span Free Play
                                             else
-                                                div.badge.badge-info
+                                                div.badge.badge-success
                                                     if (db.credit_to_currency_rate)
-                                                        i.fas.fa-yen-sign.pr-2
+                                                        i.fas.fa-yen-sign.pr-1
                                                     span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credits')}
                                         div
                                             i.fas.fa-clock-four.pr-2
