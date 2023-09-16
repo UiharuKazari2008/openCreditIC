@@ -20,7 +20,8 @@ if (!fs.existsSync('./history.json')) {
     fs.writeFileSync("./history.json", JSON.stringify({
         dispense_log: {},
         topup_log: {},
-        cards: {}
+        cards: {},
+        machines_dispense: {}
     }), null, 2);
 }
 let history = require('./history.json');
@@ -87,6 +88,24 @@ function manageAuth(req, res, next) {
     } else {
         next();
     }
+}
+
+//polyfill shit
+if (history.dispense_log && Object.keys(history.dispense_log) > 0) {
+    if (!history.machines_dispense)
+        history.machines_dispense = {};
+    Object.entries(history.dispense_log).map(u => {
+        u[1].map(m => {
+            if (!history.machines_dispense[m.machine])
+                history.machines_dispense[m.machine] = [];
+            history.machines_dispense[m.machine].push({
+                user: u[0],
+                ...m
+            })
+        })
+    })
+    console.log('Migrated Dispense Logs');
+    saveDatabase();
 }
 
 app.set('view engine', 'pug');
@@ -161,36 +180,36 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                 })()
                 const isCooldown = (() => {
                     if (history.dispense_log[db.cards[req.params.card].user] && machine.antihog_trigger && machine.antihog_min) {
-                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= machine.antihog_trigger)
-                            return false;
+                            return 0;
                         const cooldown_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Machine Antihog times : ${machine.antihog_trigger}x${machine.antihog_min}m - ${timeDifference / 60000}m`)
-                        return timeDifference < (60000 * machine.antihog_min);
+                        return 3
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.antihog_trigger && db.antihog_min) {
-                        const dispense_log = history.dispense_log[db.cards[req.params.card].user];
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= db.antihog_trigger)
-                            return false;
+                            return 0;
                         const cooldown_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Global Antihog times : ${db.antihog_trigger}x${db.antihog_min}m - ${timeDifference / 60000}m`)
-                        return timeDifference < (60000 * db.antihog_min);
+                        return 2
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.cooldown_trigger && db.cooldown_min) {
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user];
                         if (dispense_log.length <= db.cooldown_trigger)
-                            return false;
+                            return 0;
                         const cooldown_target = dispense_log[dispense_log.length - db.cooldown_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Cooldown times : ${db.cooldown_trigger}x${db.cooldown_min}m - ${timeDifference / 60000}m`)
-                        return timeDifference < (60000 * db.cooldown_min);
+                        return 1
                     }
-                    return false;
+                    return 0;
                 })()
                 if (isCooldown) {
-                    /*if (!history.dispense_log[db.cards[req.params.card].user])
+                    if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
                         machine: (req.params.machine_id).toUpperCase(),
@@ -198,8 +217,9 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
                         status: false,
+                        cool_down: isCooldown,
                         time: Date.now().valueOf()
-                    })*/
+                    })
                     if (!history.cards[req.params.card])
                         history.cards[req.params.card] = {};
                     history.cards[req.params.card] = {
@@ -219,6 +239,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         balance: user.credits,
                         free_play: user.free_play || cost[1],
                         status: false,
+                        cool_down: isCooldown,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
                         japanese: !!((machine && machine.jpn) || db.jpn)
@@ -235,6 +256,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         card: req.params.card,
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
+                        cool_down: isCooldown,
                         status: true,
                         time: Date.now().valueOf()
                     })
@@ -245,6 +267,16 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         authorised: true,
                         time: Date.now().valueOf()
                     }
+                    if (!history.machines_dispense[(req.params.machine_id).toUpperCase()])
+                        history.machines_dispense[(req.params.machine_id).toUpperCase()] = [];
+                    history.machines_dispense[(req.params.machine_id).toUpperCase()].push({
+                        user: db.cards[req.params.card].user,
+                        card: req.params.card,
+                        cost: cost[0],
+                        free_play: user.free_play || cost[1],
+                        status: true,
+                        time: Date.now().valueOf()
+                    })
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (user.credits > db.low_balance) {
@@ -258,6 +290,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
                             status: true,
+                            cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
                             japanese: !!((machine && machine.jpn) || db.jpn)
@@ -273,6 +306,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
                             status: true,
+                            cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
                             japanese: !!((machine && machine.jpn) || db.jpn)
@@ -303,6 +337,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         cost: cost[0],
                         free_play: user.free_play || cost[1],
                         status: false,
+                        cool_down: isCooldown,
                         time: Date.now().valueOf()
                     })
                     if (!history.cards[req.params.card])
@@ -322,6 +357,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         balance: user.credits,
                         free_play: user.free_play || cost[1],
                         status: false,
+                        cool_down: isCooldown,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
                         japanese: !!((machine && machine.jpn) || db.jpn)
@@ -336,7 +372,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                 }
                 if (!history.cards[req.params.card])
                     history.cards[req.params.card] = {};
-                history.cards[req.params.card] ={
+                history.cards[req.params.card] = {
                     machine: (req.params.machine_id).toUpperCase(),
                     authorised: false,
                     time: Date.now().valueOf()
@@ -1643,15 +1679,10 @@ app.get('/delete/machine/:machine_id', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-app.get('/get/last_dispense', manageAuth, (req, res) => {
+app.get('/get/machine/dispense', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            res.status(200).json(Object.entries(history.dispense_log).map(u => {
-                return {
-                    user: u[0],
-                    ...u[1][u[1].length - 1]
-                }
-            }))
+            res.status(200).json(history.machines_dispense)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
