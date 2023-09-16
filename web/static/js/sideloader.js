@@ -213,7 +213,7 @@ function getUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL :  '/') + `get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}?${request.toString()}`
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL :  '/') + `get/${(userId) ? ('rendered/user/' + userId) : (cardId) ? ('rendered/card/' + cardId) : 'scan/' + machineID}`
     $.ajax({
         type: "GET",
         url: _url, data: '',
