@@ -128,7 +128,8 @@ app.get('/', manageAuth, (req, res) => {
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
                 const date = new moment(new Date(e[1][e[1].length - 1].time))
                 console.log(new Date(e[1][e[1].length - 1].time))
-                console.log(date)
+                console.log(date.getDay())
+                console.log(date.format())
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
