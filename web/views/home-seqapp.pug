@@ -214,10 +214,10 @@ body(style="overflow-x: hidden;")
                                         div.d-inline-flex.align-items-center
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)
-                                                div.badge.badge-success
+                                                div.badge.badge-success.text-dark
                                                     span.font-weight-bold Free Play
                                             else
-                                                div.badge.badge-success
+                                                div.badge.badge-success.text-dark
                                                     if (db.credit_to_currency_rate)
                                                         i.fas.fa-yen-sign.pr-1
                                                     span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credits')}
