@@ -220,7 +220,7 @@ body(style="overflow-x: hidden;")
                                                 div.badge.badge-info
                                                     if (db.credit_to_currency_rate)
                                                         i.fas.fa-yen-sign.pr-2
-                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : machine.last.cost.toString()}
+                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credits')}
                                         div
                                             i.fas.fa-clock-four.pr-2
                                             span #{machine.last.time_pretty}
