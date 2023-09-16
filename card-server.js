@@ -1684,7 +1684,7 @@ app.get('/delete/machine/:machine_id', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-app.get('/get/machine/dispense', (req, res) => {
+app.get('/get/dispense/machine', manageAuth, (req, res) => {
     if (history.machines_dispense) {
         try {
             res.status(200).json(history.machines_dispense)
