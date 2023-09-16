@@ -212,28 +212,26 @@ body(style="overflow-x: hidden;")
                                             i.fas.fa-user.pr-2
                                             span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
                                         if (machine.last.user_b2b > 1)
-                                        div
-                                            i.fas.fa-chart-pie-simple.pr-2
-                                            div.badge.badge-success.text-gray-900.ml-2
-                                                span.pr-1 #{machine.last.user_b2b} (#{machine.last.user_total_time})
+                                            div
+                                                i.fas.fa-chart-pie-simple.pr-2
+                                                span.pr-1 #{machine.last.user_b2b}x (#{machine.last.user_total_time})
                                                 if (db.credit_to_currency_rate)
                                                     i.fas.fa-yen-sign.pr-1
-                                                span / #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
+                                                span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
                                         div.d-inline-flex.align-items-center
                                             i.fas.fa-money-bill.pr-2
                                             if (machine.last.free_play)
                                                 div.badge.badge-success.text-gray-900
                                                     span.font-weight-bold Free Play
                                             else
-                                                div.badge.badge-success.text-gray-900
-                                                    if (db.credit_to_currency_rate)
-                                                        i.fas.fa-yen-sign.pr-1
-                                                    span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credit(s)')}
+                                                if (db.credit_to_currency_rate)
+                                                    i.fas.fa-yen-sign.pr-1
+                                                span #{(db.credit_to_currency_rate) ? machine.last.cost * db.credit_to_currency_rate : (machine.last.cost.toString() + 'Credit(s)')}
                                         div
                                             i.fas.fa-clock-four.pr-2
                                             span #{machine.last.time_pretty}
 
-                                    .card-footer.position-relative.w-100.h-100(style=`padding: 0.7em;`)
+                                    .card-footer.position-relative.w-100.h-100.bg-translucent.d-flex.justify-content-between(style=`padding: 0.7em;`)
                                         div
                                             i.fas.fa-users.pr-2
                                             span #{machine.today.users.length}
