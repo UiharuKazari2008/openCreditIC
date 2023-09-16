@@ -92,7 +92,7 @@ body.bg-dark.text-white
                                 i.fas.fa-gamepad(style="padding-right: 0.5em")
                                 span #{(machine.info && machine.info.name) ? machine.info.name : machine.id}
                             .col-auto.d-flex.p-0.align-items-center
-                        .card-body.position-relative.w-100.h-100.justify-content-start(style=`padding: 0.7em;`)
+                        .card-body.position-relative.w-100.h-100.align-items-start.d-flex.flex-column(style=`padding: 0.7em;`)
                             div
                                 i.fas.fa-user.pr-2
                                 span #{(machine.last.user_info && machine.last.user_info.name) ? machine.last.user_info.name : machine.last.user}
