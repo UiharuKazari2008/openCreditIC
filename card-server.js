@@ -127,16 +127,14 @@ app.get('/', manageAuth, (req, res) => {
             config,
             machine_dispense: Object.entries(history.machines_dispense).map(e => {
                 const date = new moment(new Date(e[1][e[1].length - 1].time))
-                console.log(new Date(e[1][e[1].length - 1].time))
-                console.log(date.millisecond())
-                console.log(date.format())
+                const pretty_date = date.format(config.clock.format || "DD/MM HH:mm:ss")
                 return {
                     id: e[0],
                     info: db.machines[e[0]],
                     last: {
                         ...e[1][e[1].length - 1],
                         user_info: db.users[e[1][e[1].length - 1].user],
-                        time_pretty: date.format(config.clock.format || "DD/MM HH:mm:ss")
+                        time_pretty: pretty_date
                     }
                 }
             })
