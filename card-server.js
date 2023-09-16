@@ -112,6 +112,35 @@ app.get('/', manageAuth, (req, res) => {
 app.use('/static', express.static('./web/static', ));
 app.use('/ui_static', express.static('./ui_images', ));
 // Should only be called by a cabinet
+app.get('/get/machine/:machine_id', readerAuth, (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {
+                res.status(200).json({
+                    cost: db.cost,
+                    free_play: db.free_play,
+                    japanese: db.jpn,
+                    currency_mode: !!(db.credit_to_currency_rate),
+                    currency_rate: db.credit_to_currency_rate,
+                    ...db.machines[(req.params.machine_id).toUpperCase()]
+                })
+            } else {
+                res.status(200).json({
+                    cost: db.cost,
+                    free_play: db.free_play,
+                    japanese: db.jpn,
+                    currency_mode: !!(db.credit_to_currency_rate),
+                    currency_rate: db.credit_to_currency_rate
+                })
+            }
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -1614,27 +1643,15 @@ app.get('/delete/machine/:machine_id', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-app.get('/get/machine/:machine_id', readerAuth, (req, res) => {
+app.get('/get/last_dispense', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {
-                res.status(200).json({
-                    cost: db.cost,
-                    free_play: db.free_play,
-                    japanese: db.jpn,
-                    currency_mode: !!(db.credit_to_currency_rate),
-                    currency_rate: db.credit_to_currency_rate,
-                    ...db.machines[(req.params.machine_id).toUpperCase()]
-                })
-            } else {
-                res.status(200).json({
-                    cost: db.cost,
-                    free_play: db.free_play,
-                    japanese: db.jpn,
-                    currency_mode: !!(db.credit_to_currency_rate),
-                    currency_rate: db.credit_to_currency_rate
-                })
-            }
+            res.status(200).json(Object.entries(history.dispense_log).map(u => {
+                return {
+                    user: u[0],
+                    ...u[1][u[1].length - 1]
+                }
+            }))
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
