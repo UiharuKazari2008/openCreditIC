@@ -87,4 +87,4 @@ static const unsigned char bootLogo [] PROGMEM = {
       0xFF, 0xFF, 0xFF, 0xFF,
 };
 const int bootLogo_w = 128;
-const int bootLogo_h = 64
+const int bootLogo_h = 64;

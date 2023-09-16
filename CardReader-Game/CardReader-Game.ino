@@ -114,7 +114,7 @@ void loop() {
 void checkWiFiConnection() {
   if (WiFi.status() != WL_CONNECTED) {
     setLEDs(CRGB::Magenta);
-    bootScreen(WiFi.macAddress().c_str);
+    bootScreen(WiFi.macAddress().c_str());
     Serial.println("WiFi not connected. Attempting to reconnect...");
     WiFi.hostname("SimpleCard");
     WiFi.disconnect(true);
@@ -230,7 +230,7 @@ void handleLoop() {
     // Game Disabled
     if (blockState == 0) {
       // Was Previouly Unblocked
-      handleBlocked(false, "");
+      handleBlocked();
     }
     if (enableState == 0) {
       // Disabled by Admin
@@ -291,7 +291,7 @@ void handleCardRead() {
       } else if (httpCode > 400) {
         // Account Issue
         Serial.println("Card OK, Account Issue! " + uid);
-        handleAccountIssue(httpCode, httpResponse);
+        displayAccountIssue(httpCode, httpResponse);
       } else if (httpCode > 1) {
         // Invalid Card
         Serial.println("Card Denied! " + uid);
@@ -618,7 +618,7 @@ void bootScreen(String input_message) {
 }
 // Display "Game Over" on Reader Disable - DS 55
 void displayDisableReader() {
-  if (displayState !== 55) {
+  if (displayState != 55) {
     setLEDs(CRGB::Black);
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
@@ -645,7 +645,7 @@ void displayDisableReader() {
 }
 // Display Blockd Callback "Wait a moment" - DS 50
 void displayBootUpReader() {
-  if (displayState !== 50) {
+  if (displayState != 50) {
     setLEDs(CRGB::Black);
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
