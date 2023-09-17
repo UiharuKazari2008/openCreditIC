@@ -22,7 +22,8 @@ if (!fs.existsSync('./history.json')) {
         dispense_log: {},
         topup_log: {},
         cards: {},
-        machines_dispense: {}
+        machines_dispense: {},
+        machines_checkin: {},
     }), null, 2);
 }
 let history = require('./history.json');
@@ -177,6 +178,9 @@ if (!history.machines_dispense) {
     console.log('Migrated Dispense Logs');
     saveDatabase();
 }
+if (!history.machines_checkin) {
+    history.machines_checkin = {}
+}
 
 app.set('view engine', 'pug');
 app.set('views', './web/views');
@@ -227,6 +231,16 @@ app.use('/ui_static', express.static('./ui_images', ));
 app.get('/get/machine/:machine_id/:mode', readerAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
+            if (!history.machines_checkin[(req.params.machine_id).toUpperCase()])
+                history.machines_checkin[(req.params.machine_id).toUpperCase()] = {};
+            switch (req.params.mode){
+                case "init":
+                case "checkin":
+                    history.machines_checkin[(req.params.machine_id).toUpperCase()][req.params.mode] = Date.now().valueOf();
+                    break;
+                default:
+                    break;
+            }
             if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {
                 res.status(200).json({
                     cost: db.cost,
