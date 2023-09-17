@@ -282,7 +282,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
                         if (dispense_log.length <= machine.discount_tap)
                             return false;
-                        const discount_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
+                        const discount_target = dispense_log[(dispense_log.length - 1) - machine.discount_tap].time;
+                        const was_discount = dispense_log[(dispense_log.length - 1) - machine.discount_tap].discount;
                         const timeDifference = Date.now().valueOf() - discount_target;
                         return (timeDifference < (1000 * db.discount_sec)) ? machine.discount_cost : false;
                     }
@@ -290,7 +291,8 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
                         if (dispense_log.length <= db.discount_tap)
                             return false;
-                        const discount_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
+                        const discount_target = dispense_log[dispense_log.length - db.discount_tap].time;
+                        const was_discount = dispense_log[dispense_log.length - db.discount_tap].discount;
                         const timeDifference = Date.now().valueOf() - discount_target;
                         return (timeDifference < (1000 * db.discount_sec)) ? db.discount_cost : false;
                     }
@@ -302,7 +304,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     if (db.free_play)
                         return [0, true]
                     if (discount)
-                        [discount, false]
+                        return [discount, false]
                     if (machine && machine.cost)
                         return [machine.cost, false]
                     return [db.cost, false]
@@ -312,7 +314,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status && e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= machine.antihog_trigger)
                             return 0;
-                        const cooldown_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
+                        const cooldown_target = dispense_log[(dispense_log.length - 1) - machine.antihog_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Machine Antihog times : ${machine.antihog_trigger}x${machine.antihog_min}m - ${timeDifference / 60000}m`)
                         return (timeDifference < (60000 * machine.antihog_min)) ? 3 : 0
@@ -321,7 +323,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status && e.machine === (req.params.machine_id).toUpperCase());
                         if (dispense_log.length <= db.antihog_trigger)
                             return 0;
-                        const cooldown_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
+                        const cooldown_target = dispense_log[(dispense_log.length - 1) - db.antihog_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Global Antihog times : ${db.antihog_trigger}x${db.antihog_min}m - ${timeDifference / 60000}m`)
                         return (timeDifference < (60000 * db.antihog_min)) ? 2 : 0
@@ -330,7 +332,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
                         if (dispense_log.length <= db.cooldown_trigger)
                             return 0;
-                        const cooldown_target = dispense_log[dispense_log.length - db.cooldown_trigger].time;
+                        const cooldown_target = dispense_log[(dispense_log.length - 1) - db.cooldown_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
                         console.log(`Cooldown times : ${db.cooldown_trigger}x${db.cooldown_min}m - ${timeDifference / 60000}m`)
                         return (timeDifference < (60000 * db.cooldown_min)) ? 1 : 0
