@@ -228,7 +228,7 @@ app.get('/', manageAuth, (req, res) => {
 app.use('/static', express.static('./web/static', ));
 app.use('/ui_static', express.static('./ui_images', ));
 // Should only be called by a cabinet
-app.get('/get/machine/:machine_id/:mode', readerAuth, (req, res) => {
+app.get(['/get/machine/:machine_id/:mode', '/get/machine/:machine_id'], readerAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
             if (!history.machines_checkin[(req.params.machine_id).toUpperCase()])
@@ -239,6 +239,7 @@ app.get('/get/machine/:machine_id/:mode', readerAuth, (req, res) => {
                     history.machines_checkin[(req.params.machine_id).toUpperCase()][req.params.mode] = Date.now().valueOf();
                     break;
                 default:
+                    history.machines_checkin[(req.params.machine_id).toUpperCase()]["init"] = Date.now().valueOf();
                     break;
             }
             if (db.machines[(req.params.machine_id).toUpperCase()] !== undefined) {
