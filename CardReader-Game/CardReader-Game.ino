@@ -20,7 +20,7 @@
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
 #ifdef DISPLAY_I2C_128x32
-U8G2_SSD1305_128X32_NONAME_F_HW_I2C u8g2(U8G2_R0);
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0);
 #else
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
 #endif
@@ -231,8 +231,8 @@ void handleLoop() {
         lastButtonState = false;
       } else {
         // Normal State
-        displayStandbyScreen();
         handleCardRead();
+        displayStandbyScreen();
       }
     }
   } else if (waitingForUnblock == true) {
@@ -260,8 +260,8 @@ void handleLoop() {
         lastButtonState = false;
       } else if (sys_callbackOnBlockedTap == true) {
         // Normal State (With Waiting Card)
-        displayEcoModeScreen();
         handleCardRead();
+        displayEcoModeScreen();
       } else {
         // Normal State
         sleepDevice();
@@ -302,14 +302,14 @@ void handleCardRead() {
         // Withdraw Declined
         Serial.println("Card OK, No Avalible Balance! " + uid);
         displayCreditReponse(httpCode, httpResponse);
+      } else if (httpCode == 404) {
+        // Invalid Card
+        Serial.println("Card Denied! " + uid);
+        displayInvalidCard();
       } else if (httpCode > 400) {
         // Account Issue
         Serial.println("Card OK, Account Issue! " + uid);
         displayAccountIssue(httpCode, httpResponse);
-      } else if (httpCode > 1) {
-        // Invalid Card
-        Serial.println("Card Denied! " + uid);
-        displayInvalidCard();
       } else {
         // Invalid Card
         Serial.println("Communication Error: " + uid);
@@ -375,15 +375,27 @@ void displayStandbyScreen() {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, 139);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
     const char* string = (sys_jpn == true) ? "カードをタップします!": "Tap your card!";
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 55, string);
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, 77);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 139);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, (sys_jpn == true) ? 54 : 55, string);
+    #endif
     u8g2.sendBuffer();
     displayState = 10;
   }
@@ -395,14 +407,13 @@ void displayEcoModeScreen() {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
     const char* string = (sys_jpn == true) ? "省エネモード" : "Energy Saving";
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
     int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
-    int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
     u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_ecology_t);
     int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
     u8g2.drawGlyph(centerGlX, centerGlY, 58);
     u8g2.setDrawColor(1);
@@ -417,15 +428,27 @@ void displayStartComm(String uid) {
   u8g2.setPowerSave(0);
   u8g2.setContrast(1);
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-  int centerGlX = (u8g2.getWidth() - 32) / 2;
-  int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-  u8g2.drawGlyph(centerGlX, centerGlY, 84);
-  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
-  const char* string = (sys_jpn == true) ?  "接続中" : "Communicating...";
-  int textWidth = u8g2.getUTF8Width(string);
-  int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 55, string);
+  const char* string = (sys_jpn == true) ?  "接続中" : "Communicating";
+  #ifdef DISPLAY_I2C_128x32
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_all_t);
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawGlyph(centerGlX, centerGlY, 510);
+  #else
+    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+    int centerGlX = (u8g2.getWidth() - 32) / 2;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+    u8g2.drawGlyph(centerGlX, centerGlY, 84);
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = (u8g2.getWidth() - textWidth) / 2;
+    u8g2.drawUTF8(centerX, 55, string);
+  #endif
   u8g2.sendBuffer();
 }
 // Display Credit Response - DS Interupt
@@ -464,7 +487,11 @@ void displayCreditReponse(int httpCode, String message) {
     u8g2.setFont(u8g2_font_logisoso20_tr); // Choose your font
     int textWidth = u8g2.getStrWidth(string);
     int centerX = (u8g2.getWidth() - textWidth) / 2;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #ifdef DISPLAY_I2C_128x32
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    #else
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #endif
     u8g2.drawStr(centerX, centerY, string);
   } else if (currency_mode == true) {
     // Currency Mode
@@ -476,11 +503,19 @@ void displayCreditReponse(int httpCode, String message) {
     int textWidth = u8g2.getStrWidth(string);
     int centerX = ((u8g2.getWidth() - textWidth) / 2) + (((strlen(string) > 4) ? 16 : 32) / 2);
     int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (((strlen(string) > 4) ? 16 : 32) / 2);
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #ifdef DISPLAY_I2C_128x32
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    #else
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #endif
     u8g2.drawStr(centerX, centerY, string);
-
-    u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    #else
+      u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #endif
     u8g2.drawGlyph(centerGlX, centerGlY, (jpn == true) ? 284 : 147);
   } else {
     // Credit Mode
@@ -490,22 +525,30 @@ void displayCreditReponse(int httpCode, String message) {
     u8g2.setFont(u8g2_font_logisoso32_tr); // Choose your font
     int textWidth = u8g2.getStrWidth(string);
     int centerX = (u8g2.getWidth() - textWidth) / 2;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #ifdef DISPLAY_I2C_128x32
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    #else
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+    #endif
     u8g2.drawStr(centerX, centerY, string);
   }
 
   // Add Reason - Low Balance or No Balance
   if (httpCode != 200 && free_play == false) {
-    String lowbal = (httpCode == 400) ? ((sys_jpn == true) ? "お金が足りない" : "Balance to low!") : ((sys_jpn == true) ? "カード残高が少ない" : "Low Balance!");
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
-    int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
-    int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
-    u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
+    #ifdef DISPLAY_I2C_128x32
+      // Nothing
+    #else
+      String lowbal = (httpCode == 400) ? ((sys_jpn == true) ? "お金が足りない" : "Balance to low!") : ((sys_jpn == true) ? "カード残高が少ない" : "Low Balance!");
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+      int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
+      int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
+      u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
+    #endif
   }
 
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
-  
+
   if (httpCode != 200 && free_play == false) {
     // Flash Low Balance or No Balance
     int count = 3;
@@ -538,15 +581,27 @@ void displayInvalidCard() {
   u8g2.sendBuffer();
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-  int centerGlX = (u8g2.getWidth() - 32) / 2;
-  int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-  u8g2.drawGlyph(centerGlX, centerGlY, 121);
-  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
-  const char* string = (sys_jpn == true) ? "無効なカード" : "Unregistered Card";
-  int textWidth = u8g2.getUTF8Width(string);
-  int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 55, string);
+  const char* string = (sys_jpn == true) ? "無効なカード" : "Invalid Card";
+  #ifdef DISPLAY_I2C_128x32
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_all_t);
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawGlyph(centerGlX, centerGlY, 328);
+  #else
+    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+    int centerGlX = (u8g2.getWidth() - 32) / 2;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+    u8g2.drawGlyph(centerGlX, centerGlY, 121);
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = (u8g2.getWidth() - textWidth) / 2;
+    u8g2.drawUTF8(centerX, 55, string);
+  #endif
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
   int count = 3;
@@ -571,15 +626,27 @@ void displayAccountIssue(int httpCode, String message) {
   u8g2.sendBuffer();
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-  int centerGlX = (u8g2.getWidth() - 32) / 2;
-  int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-  u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 123 : 121);
-  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
   const char* string = (httpCode == 407) ? ((sys_jpn == true) ? "減速する!" : "Slow down!") : ((sys_jpn == true) ? "アテンダントを参照" : "See Attendant");
-  int textWidth = u8g2.getUTF8Width(string);
-  int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 55, string);
+  #ifdef DISPLAY_I2C_128x32
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_all_t);
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 489 : 328);
+  #else
+    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+    int centerGlX = (u8g2.getWidth() - 32) / 2;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+    u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 123 : 121);
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = (u8g2.getWidth() - textWidth) / 2;
+    u8g2.drawUTF8(centerX, 55, string);
+  #endif
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
   int count = 3;
@@ -604,15 +671,27 @@ void displayCommunicationError() {
   u8g2.sendBuffer();
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
-  u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-  int centerGlX = (u8g2.getWidth() - 32) / 2;
-  int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-  u8g2.drawGlyph(centerGlX, centerGlY, 121);
-  u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
-  const char* string = (sys_jpn == true) ? "無効なカード" : "Unregistered Card";
-  int textWidth = u8g2.getUTF8Width(string);
-  int centerX = (u8g2.getWidth() - textWidth) / 2;
-  u8g2.drawUTF8(centerX, 55, string);
+  const char* string = (sys_jpn == true) ? "接続の問題" : "Comm Failure";
+  #ifdef DISPLAY_I2C_128x32
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_all_t);
+    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+    u8g2.drawGlyph(centerGlX, centerGlY, 328);
+  #else
+    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+    int centerGlX = (u8g2.getWidth() - 32) / 2;
+    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+    u8g2.drawGlyph(centerGlX, centerGlY, 121);
+    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+    int textWidth = u8g2.getUTF8Width(string);
+    int centerX = (u8g2.getWidth() - textWidth) / 2;
+    u8g2.drawUTF8(centerX, 55, string);
+  #endif
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
   delay(3000);
@@ -624,6 +703,10 @@ void bootScreen(String input_message) {
   u8g2.setDrawColor(1);
   u8g2.drawXBM(0, 0, bootLogo_w, bootLogo_h, bootLogo);
   u8g2.sendBuffer();
+  #ifdef DISPLAY_I2C_128x32
+    delay(1000);
+    u8g2.clearBuffer();
+  #endif
   u8g2.setDrawColor(0);
   u8g2.setColorIndex(0);
   u8g2.setFont(u8g2_font_HelvetiPixel_tr); // Choose your font
@@ -631,7 +714,11 @@ void bootScreen(String input_message) {
   int textWidth = u8g2.getStrWidth(string);
   int centerX = ((u8g2.getWidth() - textWidth) / 2);
   int centerGlX = ((u8g2.getWidth() - textWidth) / 2);
-  int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2 + 15;
+  #ifdef DISPLAY_I2C_128x32
+    int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  #else
+    int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2 + 15;
+  #endif
   u8g2.drawStr(centerX, centerY, string);
   u8g2.setColorIndex(1);
   u8g2.sendBuffer();
@@ -670,15 +757,23 @@ void displayBootUpReader() {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, 205);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
     const char* string = (sys_jpn == true) ? "ちょっと 待って..." : "Please Wait...";
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, 55, string);
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2);
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 205);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr); // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+    #endif
     u8g2.setDrawColor(1);
     u8g2.sendBuffer();
     displayState = 50;
@@ -739,7 +834,7 @@ void displayButtonDisplayDisabled() {
     u8g2.setPowerSave(0);
     u8g2.setContrast(128);
     u8g2.clearBuffer();
-    
+
     u8g2.setFont(u8g2_font_HelvetiPixel_tr); // Choose your font
     const char* string = WiFi.macAddress().c_str();
     int textWidth = u8g2.getStrWidth(string);
