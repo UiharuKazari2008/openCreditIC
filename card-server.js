@@ -1742,7 +1742,7 @@ app.get('/set/machine/japanese/:machine_id/:value', manageAuth, (req, res) => {
             if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
                 db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[(req.params.machine_id).toUpperCase()].jpn = (req.params.value === "enable");
+            db.machines[(req.params.machine_id).toUpperCase()].japanese = (req.params.value === "enable");
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send("Machine VFD Japanese is " + ((req.params.value === "enable") ? "enabled" : "disabled"));

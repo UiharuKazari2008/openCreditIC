@@ -19,8 +19,14 @@
 
 CRGB leds[NUM_LEDS]; // Create an array of CRGB colors for the LEDs.
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create an MFRC522 instance.
+#ifdef DISPLAY_I2C_128x32
+U8G2_SSD1305_128X32_NONAME_F_HW_I2C u8g2(U8G2_R0);
+#else
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
+#endif
+#ifdef REMOTE_ACCESS
 WebServer server(80);
+#endif
 
 int enableState = 0;
 int blockState = 0;
@@ -61,6 +67,7 @@ void setup() {
   bootScreen("HARDWARE");
   checkWiFiConnection();
 
+#ifdef REMOTE_ACCESS
   server.on("/test/block", [=]() {
     if (blockOverride == 0) {
       blockOverride = 1;
@@ -95,14 +102,17 @@ void setup() {
     server.send(200, "text/plain", "OK");
     ESP.restart();
   });
-
   server.begin();
+  Serial.println("Remote Access Enabled");
+#endif
   enableState = 1;
   Serial.println("Reader Online");
 }
 void loop() {
   checkWiFiConnection();
+#ifdef REMOTE_ACCESS
   server.handleClient();
+#endif
   handleLoop();
 }
 
