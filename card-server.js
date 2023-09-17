@@ -428,7 +428,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
-                            japanese: !!((machine && machine.jpn) || db.jpn)
+                            japanese: !!((machine && machine.japanese) || db.jpn)
                         });
                     } else {
                         if (machine && machine.vfd) {
@@ -445,7 +445,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
-                            japanese: !!((machine && machine.jpn) || db.jpn)
+                            japanese: !!((machine && machine.japanese) || db.jpn)
                         });
                     }
                     if (machine && machine.withdraw_callback) {
@@ -498,7 +498,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         cool_down: isCooldown,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
-                        japanese: !!((machine && machine.jpn) || db.jpn)
+                        japanese: !!((machine && machine.japanese) || db.jpn)
                     });
                     console.error(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Not Enough Credits`)
                 }
