@@ -277,11 +277,32 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                 db.users[db.cards[req.params.card].user] !== undefined &&
                 !db.users[db.cards[req.params.card].user].locked) {
                 let user = db.users[db.cards[req.params.card].user];
+                const discount = (() => {
+                    if (history.dispense_log[db.cards[req.params.card].user] && machine.discount_tap && machine.discount_cost && machine.discount_sec) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
+                        if (dispense_log.length <= machine.discount_tap)
+                            return false;
+                        const discount_target = dispense_log[dispense_log.length - machine.antihog_trigger].time;
+                        const timeDifference = Date.now().valueOf() - discount_target;
+                        return (timeDifference < (1000 * db.discount_sec)) ? machine.discount_cost : false;
+                    }
+                    if (history.dispense_log[db.cards[req.params.card].user] && db.discount_tap && db.discount_cost && db.discount_sec) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
+                        if (dispense_log.length <= db.discount_tap)
+                            return false;
+                        const discount_target = dispense_log[dispense_log.length - db.antihog_trigger].time;
+                        const timeDifference = Date.now().valueOf() - discount_target;
+                        return (timeDifference < (1000 * db.discount_sec)) ? db.discount_cost : false;
+                    }
+                    return false;
+                })()
                 const cost = (() => {
                     if (machine && machine.free_play)
                         return [0, true]
                     if (db.free_play)
                         return [0, true]
+                    if (discount)
+                        [discount, false]
                     if (machine && machine.cost)
                         return [machine.cost, false]
                     return [db.cost, false]
@@ -347,6 +368,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         balance: user.credits,
                         free_play: user.free_play || cost[1],
                         status: false,
+                        discount: !!(discount),
                         cool_down: isCooldown,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
@@ -363,6 +385,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
                         cost: cost[0],
+                        discount: !!(discount),
                         free_play: user.free_play || cost[1],
                         cool_down: isCooldown,
                         status: true,
@@ -381,6 +404,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         user: db.cards[req.params.card].user,
                         card: req.params.card,
                         cost: cost[0],
+                        discount: !!(discount),
                         free_play: user.free_play || cost[1],
                         status: true,
                         time: Date.now().valueOf()
@@ -398,6 +422,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
                             status: true,
+                            discount: !!(discount),
                             cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
@@ -414,6 +439,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             balance: user.credits,
                             free_play: user.free_play || cost[1],
                             status: true,
+                            discount: !!(discount),
                             cool_down: isCooldown,
                             currency_mode: !!(db.credit_to_currency_rate),
                             currency_rate: db.credit_to_currency_rate,
@@ -443,6 +469,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
                         cost: cost[0],
+                        discount: !!(discount),
                         free_play: user.free_play || cost[1],
                         status: false,
                         cool_down: isCooldown,
@@ -465,6 +492,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         balance: user.credits,
                         free_play: user.free_play || cost[1],
                         status: false,
+                        discount: !!(discount),
                         cool_down: isCooldown,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
@@ -1607,6 +1635,27 @@ app.get('/set/machine/cost/:machine_id/:cost', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+app.get('/set/machine/discount/:machine_id/:tap/:time/:cost', manageAuth, (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
+            }
+            db.machines[(req.params.machine_id).toUpperCase()].discount_tap = parseInt(req.params.tap);
+            db.machines[(req.params.machine_id).toUpperCase()].discount_cost = parseFloat(req.params.cost);
+            db.machines[(req.params.machine_id).toUpperCase()].discount_sec = parseFloat(req.params.time);
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} discount is ${req.params.cost} after ${req.params.tap} tap(s)`)
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} discount is ${req.params.cost} after ${req.params.tap} tap(s)`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
 app.get('/set/machine/name/:machine_id/:name', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
@@ -1828,6 +1877,24 @@ app.get('/set/arcade/cost/:cost', manageAuth, (req, res) => {
             saveTimeout = setTimeout(saveDatabase, 5000);
             console.log(`Arcade global costs is ${req.params.cost}`)
             res.status(200).send(`Arcade global costs is ${req.params.cost}`);
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
+app.get('/set/arcade/discount/:tap/:time/:cost', manageAuth, (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            db.discount_tap = parseInt(req.params.tap);
+            db.discount_cost = parseFloat(req.params.cost);
+            db.discount_sec = parseFloat(req.params.time);
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            console.log(`Arcade global multi-credit discount costs is ${req.params.cost} after ${req.params.tap} scan(s)`)
+            res.status(200).send(`Arcade global multi-credit discount costs is ${req.params.cost} after ${req.params.tap} scan(s)`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
