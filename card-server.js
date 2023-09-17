@@ -1643,9 +1643,15 @@ app.get('/set/machine/discount/:machine_id/:tap/:time/:cost', manageAuth, (req, 
             if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
                 db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
-            db.machines[(req.params.machine_id).toUpperCase()].discount_tap = parseInt(req.params.tap);
-            db.machines[(req.params.machine_id).toUpperCase()].discount_cost = parseFloat(req.params.cost);
-            db.machines[(req.params.machine_id).toUpperCase()].discount_sec = parseFloat(req.params.time);
+            if (req.params.cost === "null") {
+                delete db.machines[(req.params.machine_id).toUpperCase()].discount_tap;
+                delete db.machines[(req.params.machine_id).toUpperCase()].discount_cost;
+                delete db.machines[(req.params.machine_id).toUpperCase()].discount_sec;
+            } else {
+                db.machines[(req.params.machine_id).toUpperCase()].discount_tap = parseInt(req.params.tap);
+                db.machines[(req.params.machine_id).toUpperCase()].discount_cost = parseFloat(req.params.cost);
+                db.machines[(req.params.machine_id).toUpperCase()].discount_sec = parseFloat(req.params.time);
+            }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} discount is ${req.params.cost} after ${req.params.tap} tap(s)`)
@@ -1890,9 +1896,15 @@ app.get('/set/arcade/cost/:cost', manageAuth, (req, res) => {
 app.get('/set/arcade/discount/:tap/:time/:cost', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.discount_tap = parseInt(req.params.tap);
-            db.discount_cost = parseFloat(req.params.cost);
-            db.discount_sec = parseFloat(req.params.time);
+            if (req.params.cost === "null") {
+                delete db.discount_tap;
+                delete db.discount_cost;
+                delete db.discount_sec;
+            } else {
+                db.discount_tap = parseInt(req.params.tap);
+                db.discount_cost = parseFloat(req.params.cost);
+                db.discount_sec = parseFloat(req.params.time);
+            }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             console.log(`Arcade global multi-credit discount costs is ${req.params.cost} after ${req.params.tap} scan(s)`)
