@@ -334,9 +334,15 @@ function depositCredits() {
                     clearDepositCredits();
                 } else {
                     $("#waitForCardScanModal").modal("show");
+                    let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                    if (typeof SEQ_APP_URL !== 'undefined')
+                        _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                    if (key)
+                        _url2.searchParams.set('key', key);
+
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}?key=${key}`,
+                        url: _url2,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,
@@ -392,9 +398,15 @@ function freePlayUser() {
                     clearDepositCredits();
                 } else {
                     $("#waitForCardScanModal").modal("show");
+                    let _url2 = new URL(`${document.location.origin}/wait_pending/${machineID}`);
+                    if (typeof SEQ_APP_URL !== 'undefined')
+                        _url2.pathname = SEQ_APP_URL + _url2.pathname;
+                    if (key)
+                        _url2.searchParams.set('key', key);
+
                     $.ajax({
                         type: "GET",
-                        url: `/wait_pending/${machineID}?key=${key}`,
+                        url: _url2,
                         timeout: 60000, data: '',
                         processData: false,
                         contentType: false,

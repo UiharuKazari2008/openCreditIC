@@ -235,12 +235,11 @@ body(style="overflow-x: hidden;")
                                         div
                                             i.fas.fa-users.pr-2
                                             span #{machine.today.users.length}
-                                        if (machine.last.user_b2b > 1)
                                         div
                                             if (db.credit_to_currency_rate)
                                                 i.fas.fa-yen-sign.pr-1
                                             else
                                                 i.fas.fa-coins
-                                            span #{(db.credit_to_currency_rate) ? machine.last.user_total_profit * db.credit_to_currency_rate : (machine.last.user_total_profit + 'Credit(s)')}
+                                            span #{(db.credit_to_currency_rate) ? machine.today.profit * db.credit_to_currency_rate : (machine.today.profit + 'Credit(s)')}
 
 
