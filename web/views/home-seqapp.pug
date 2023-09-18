@@ -192,7 +192,10 @@ body(style="overflow-x: hidden;")
             div
                 .p-3
                     div.w-100
-                        h1 #{config.arcade_name}
+                        .col
+                            h1 #{config.arcade_name}
+                        div
+                            img(src="/ui_static/seq-logo-no-gutter.png")
                     div.w-100
                         .form-group
                             select#posTerminal.form-control.form-control-lg(name='posTerminal')
