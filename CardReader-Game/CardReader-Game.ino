@@ -371,8 +371,9 @@ void handleCardRead() {
         displayCommunicationError();
       }
     }
+  } else {
+    delay(1000);
   }
-  delay(1000);
 }
 // Handle Blocked Callback Tap - Needs Card UID
 void handleBlockedCallback(String uid) {
