@@ -372,9 +372,7 @@ void handleCardRead() {
       }
     }
   }
-  #ifdef RFID_I2C
-    delay(1000);
-  #endif
+  delay(1000);
 }
 // Handle Blocked Callback Tap - Needs Card UID
 void handleBlockedCallback(String uid) {
