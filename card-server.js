@@ -285,7 +285,7 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         const discount_target = dispense_log[(dispense_log.length - 1) - machine.discount_tap].time;
                         const was_discount = dispense_log[(dispense_log.length - 1) - machine.discount_tap].discount;
                         const timeDifference = Date.now().valueOf() - discount_target;
-                        return (timeDifference < (1000 * db.discount_sec)) ? machine.discount_cost : false;
+                        return (timeDifference < (1000 * machine.discount_sec)) ? machine.discount_cost : false;
                     }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.discount_tap && db.discount_cost && db.discount_sec) {
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
