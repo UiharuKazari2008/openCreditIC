@@ -328,13 +328,22 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         console.log(`Global Antihog times : ${db.antihog_trigger}x${db.antihog_min}m - ${timeDifference / 60000}m`)
                         return (timeDifference < (60000 * db.antihog_min)) ? 2 : 0
                     }
+                    if (history.dispense_log[db.cards[req.params.card].user] && machine.cooldown_trigger && machine.cooldown_min) {
+                        const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
+                        if (dispense_log.length <= machine.cooldown_trigger)
+                            return 0;
+                        const cooldown_target = dispense_log[(dispense_log.length - 1) - machine.cooldown_trigger].time;
+                        const timeDifference = Date.now().valueOf() - cooldown_target;
+                        console.log(`Machine Cooldown times : ${machine.cooldown_trigger}x${machine.cooldown_min}m - ${timeDifference / 60000}m`)
+                        return (timeDifference < (60000 * machine.cooldown_min)) ? 1 : 0
+                    }
                     if (history.dispense_log[db.cards[req.params.card].user] && db.cooldown_trigger && db.cooldown_min) {
                         const dispense_log = history.dispense_log[db.cards[req.params.card].user].filter(e => e.status);
                         if (dispense_log.length <= db.cooldown_trigger)
                             return 0;
                         const cooldown_target = dispense_log[(dispense_log.length - 1) - db.cooldown_trigger].time;
                         const timeDifference = Date.now().valueOf() - cooldown_target;
-                        console.log(`Cooldown times : ${db.cooldown_trigger}x${db.cooldown_min}m - ${timeDifference / 60000}m`)
+                        console.log(`Global Cooldown times : ${db.cooldown_trigger}x${db.cooldown_min}m - ${timeDifference / 60000}m`)
                         return (timeDifference < (60000 * db.cooldown_min)) ? 1 : 0
                     }
                     return 0;
@@ -1690,11 +1699,31 @@ app.get('/set/machine/antihog/:machine_id/:tap/:min', manageAuth, (req, res) => 
                 db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
             db.machines[(req.params.machine_id).toUpperCase()].antihog_trigger = req.params.tap;
-            db.machines[(req.params.machine_id).toUpperCase()].machines = req.params.min;
+            db.machines[(req.params.machine_id).toUpperCase()].antihog_min = req.params.min;
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} antihog is ${req.params.tap} for ${req.params.min}min`);
             console.log(`Machine ${(req.params.machine_id).toUpperCase()} antihog is ${req.params.tap} for ${req.params.min}min`)
+        } catch (e) {
+            console.error("Failed to read cards database", e)
+            res.status(500).send('Server Error');
+        }
+    } else {
+        res.status(500).send('Server Error');
+    }
+});
+app.get('/set/machine/cooldown/:machine_id/:tap/:min', manageAuth, (req, res) => {
+    if (db.cards && db.users) {
+        try {
+            if (db.machines[(req.params.machine_id).toUpperCase()] === undefined) {
+                db.machines[(req.params.machine_id).toUpperCase()] = {};
+            }
+            db.machines[(req.params.machine_id).toUpperCase()].cooldown_trigger = req.params.tap;
+            db.machines[(req.params.machine_id).toUpperCase()].cooldown_min = req.params.min;
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDatabase, 5000);
+            res.status(200).send(`Machine ${(req.params.machine_id).toUpperCase()} cooldown is ${req.params.tap} for ${req.params.min}min`);
+            console.log(`Machine ${(req.params.machine_id).toUpperCase()} cooldown is ${req.params.tap} for ${req.params.min}min`)
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
