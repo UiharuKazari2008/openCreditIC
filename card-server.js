@@ -1602,6 +1602,35 @@ app.get('/disable_freeplay/user', manageAuth, (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+if (config.allow_delete_orphaned_actions) {
+    app.get('/clear_dead_account_data', manageAuth, (req, res) => {
+        if (db.cards && db.users) {
+            try {
+                Object.keys(history.dispense_log).filter(e => db.users[e] === undefined).map(e => {
+                    delete history.dispense_log[e]
+                })
+                Object.keys(history.topup_log).filter(e => db.users[e] === undefined).map(e => {
+                    delete history.topup_log[e]
+                })
+                Object.keys(db.machines_dispense).filter(e => db.machines[e] === undefined).map(e => {
+                    delete db.machines_dispense[e]
+                })
+                Object.entries(db.cards).filter(e => db.users[e[1].user] === undefined).map(e => {
+                    delete db.cards[e[0]]
+                })
+                res.status(200).send("Deleted all orphaned data");
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveDatabase, 5000);
+                console.log(`Users are all in credit mode`)
+            } catch (e) {
+                console.error("Failed to read cards database", e)
+                res.status(500).send('Server Error');
+            }
+        } else {
+            res.status(500).send('Server Error');
+        }
+    })
+}
 
 // Machine Management
 app.get('/create/pos/:machine_id', manageAuth, (req, res) => {
