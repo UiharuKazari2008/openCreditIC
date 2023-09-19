@@ -1612,8 +1612,8 @@ if (config.allow_delete_orphaned_actions) {
                 Object.keys(history.topup_log).filter(e => db.users[e] === undefined).map(e => {
                     delete history.topup_log[e]
                 })
-                Object.keys(db.machines_dispense).filter(e => db.machines[e] === undefined).map(e => {
-                    delete db.machines_dispense[e]
+                Object.keys(history.machines_dispense).filter(e => db.machines[e] === undefined).map(e => {
+                    delete history.machines_dispense[e]
                 })
                 Object.entries(db.cards).filter(e => db.users[e[1].user] === undefined).map(e => {
                     delete db.cards[e[0]]
