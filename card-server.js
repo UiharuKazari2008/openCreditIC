@@ -298,6 +298,19 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     }
                     return false;
                 })()
+                // Clear Expired Freeplay Values
+                if (machine.free_play && machine.free_play_time_limit && !(Date.now().valueOf() <= machine.free_play_time_limit)) {
+                    machine.free_play = false
+                    delete machine.free_play_time_limit
+                }
+                if (db.free_play && db.free_play_time_limit && !(Date.now().valueOf() <= db.free_play_time_limit)) {
+                    db.free_play = false
+                    delete db.free_play_time_limit
+                }
+                if (user.free_play && user.free_play_time_limit && !(Date.now().valueOf() <= user.free_play_time_limit)) {
+                    user.free_play = false
+                    delete user.free_play_time_limit
+                }
                 const cost = (() => {
                     if (machine && machine.free_play && (!machine.free_play_time_limit || (machine.free_play_time_limit && Date.now().valueOf() <= machine.free_play_time_limit)))
                         return {val: 0, free_play: true, time_left: (machine.free_play_time_limit) ? machine.free_play_time_limit - Date.now().valueOf() : -1}
