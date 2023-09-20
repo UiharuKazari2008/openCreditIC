@@ -34,6 +34,8 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
 #ifdef REMOTE_ACCESS
 WebServer server(80);
 #endif
+TaskHandle_t Task1;
+TaskHandle_t Task2;
 
 int enableState = 0;
 int blockState = 0;
@@ -133,14 +135,32 @@ void setup() {
     Serial.println("Remote Access Enabled");
   #endif
   enableState = 1;
-  Serial.println("Reader Online");
+  Serial.println("Reader is ready to init");
+  bootScreen("BOOT_CPU1");
+  xTaskCreatePinnedToCore(
+                    cpu2Loop,   /* Task function. */
+                    "Watchdog",     /* name of task. */
+                    10000,       /* Stack size of task */
+                    NULL,        /* parameter of the task */
+                    1,           /* priority of the task */
+                    &Task1,      /* Task handle to keep track of created task */
+                    0);          /* pin task to core 0 */                  
+  delay(250); 
+  bootScreen("BOOT_CPU2");
+  delay(250); 
+  //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
+  xTaskCreatePinnedToCore(
+                    cpu1Loop,   /* Task function. */
+                    "ReaderTask",     /* name of task. */
+                    10000,       /* Stack size of task */
+                    NULL,        /* parameter of the task */
+                    1,           /* priority of the task */
+                    &Task2,      /* Task handle to keep track of created task */
+                    1);          /* pin task to core 1 */
+  delay(500);
 }
 void loop() {
-  checkWiFiConnection();
-  #ifdef REMOTE_ACCESS
-    server.handleClient();
-  #endif
-  handleLoop();
+  
 }
 
 //////////////////////
@@ -241,73 +261,90 @@ String getUID() {
 //////////////////////
 
 // Primary Loop function
-void handleLoop() {
-  int time_in_sec = esp_timer_get_time() / 1000000;
-  if (time_in_sec >= 86400) {
-    Serial.println("Daily Reboot");
-    ESP.restart();
-  } else if (lastCheckIn <= time_in_sec - 18000) {
-    Serial.println("Check in");
-    getConfig(false);
-  }
-  if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
-    // Game Enabled
-    if (blockState == 1) {
-      // Was Previouly Blocked
-      handleUnblocking();
-    }
-    if (enableState == 0) {
-      // Disabled by Admin
-      displayDisableReader();
-    } else {
-      // Enabled by Admin
-      if (digitalRead(BUTTON_PIN) == LOW) {
-        // Button is being pressed
-        if (lastButtonState == false) {
-          lastButtonState = true;
-          displayButtonDisplayEnabled();
-        }
-      } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
-        // Button was released
-        lastButtonState = false;
-      } else {
-        // Normal State
-        handleCardRead();
-        displayStandbyScreen();
+void cpu1Loop( void * pvParameters ) {
+  Serial.print("Primary Task running on core ");
+  Serial.println(xPortGetCoreID());
+
+  for(;;) {
+    if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
+      // Game Enabled
+      if (blockState == 1) {
+        // Was Previouly Blocked
+        handleUnblocking();
       }
-    }
-  } else if (waitingForUnblock == true) {
-    // Waiting for game to enable reader
-    displayBootUpReader();
-  } else if (digitalRead(BLOCK_PIN) == HIGH) {
-    // Game Disabled
-    if (blockState == 0) {
-      // Was Previouly Unblocked
-      handleBlocked();
-    }
-    if (enableState == 0) {
-      // Disabled by Admin
-      sleepDevice();
-    } else {
-      // Enabled by Admin
-      if (digitalRead(BUTTON_PIN) == LOW) {
-        // Button is being pressed
-        if (lastButtonState == false) {
-          lastButtonState = true;
-          displayButtonDisplayDisabled();
-        }
-      } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
-        // Button was released
-        lastButtonState = false;
-      } else if (sys_callbackOnBlockedTap == true) {
-        // Normal State (With Waiting Card)
-        handleCardRead();
-        displayEcoModeScreen();
+      if (enableState == 0) {
+        // Disabled by Admin
+        displayDisableReader();
       } else {
-        // Normal State
+        // Enabled by Admin
+        if (digitalRead(BUTTON_PIN) == LOW) {
+          // Button is being pressed
+          if (lastButtonState == false) {
+            lastButtonState = true;
+            displayButtonDisplayEnabled();
+          }
+        } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
+          // Button was released
+          lastButtonState = false;
+        } else {
+          // Normal State
+          handleCardRead();
+          displayStandbyScreen();
+        }
+      }
+    } else if (waitingForUnblock == true) {
+      // Waiting for game to enable reader
+      displayBootUpReader();
+    } else if (digitalRead(BLOCK_PIN) == HIGH) {
+      // Game Disabled
+      if (blockState == 0) {
+        // Was Previouly Unblocked
+        handleBlocked();
+      }
+      if (enableState == 0) {
+        // Disabled by Admin
         sleepDevice();
+      } else {
+        // Enabled by Admin
+        if (digitalRead(BUTTON_PIN) == LOW) {
+          // Button is being pressed
+          if (lastButtonState == false) {
+            lastButtonState = true;
+            displayButtonDisplayDisabled();
+          }
+        } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
+          // Button was released
+          lastButtonState = false;
+        } else if (sys_callbackOnBlockedTap == true) {
+          // Normal State (With Waiting Card)
+          handleCardRead();
+          displayEcoModeScreen();
+        } else {
+          // Normal State
+          sleepDevice();
+        }
       }
     }
+  }
+}
+// Secoundary Loop Function
+void cpu2Loop( void * pvParameters ) {
+  Serial.print("Secoundary Task running on core ");
+  Serial.println(xPortGetCoreID());
+
+  for(;;) {
+    int time_in_sec = esp_timer_get_time() / 1000000;
+    if (time_in_sec >= 86400) {
+      Serial.println("Daily Reboot");
+      ESP.restart();
+    } else if (lastCheckIn <= time_in_sec - 18000) {
+      Serial.println("Check in");
+      getConfig(false);
+    }
+    checkWiFiConnection();
+    #ifdef REMOTE_ACCESS
+      server.handleClient();
+    #endif
   }
 }
 // Handle Card Scanner
