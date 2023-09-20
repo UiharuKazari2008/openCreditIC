@@ -299,15 +299,17 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     return false;
                 })()
                 const cost = (() => {
-                    if (machine && machine.free_play)
-                        return [0, true]
-                    if (db.free_play)
-                        return [0, true]
+                    if (machine && machine.free_play && (!machine.free_play_time_limit || (machine.free_play_time_limit && Date.now().valueOf() <= machine.free_play_time_limit)))
+                        return {val: 0, free_play: true, time_left: (machine.free_play_time_limit) ? machine.free_play_time_limit - Date.now().valueOf() : -1}
+                    if (db.free_play && (!db.free_play_time_limit || (db.free_play_time_limit && Date.now().valueOf() <= db.free_play_time_limit)))
+                        return {val: 0, free_play: true, time_left: (db.free_play_time_limit) ? db.free_play_time_limit - Date.now().valueOf() : -1}
+                    if (user.free_play && (!user.free_play_time_limit || (user.free_play_time_limit && Date.now().valueOf() <= user.free_play_time_limit)))
+                        return {val: 0, free_play: true, time_left: (user.free_play_time_limit) ? user.free_play_time_limit - Date.now().valueOf() : -1}
                     if (discount)
-                        return [discount, false]
+                        return {val: discount, free_play: false, time_left: 0}
                     if (machine && machine.cost)
-                        return [machine.cost, false]
-                    return [db.cost, false]
+                        return {val: machine.cost, free_play: false, time_left: 0}
+                    return {val: db.cost, free_play: false, time_left: 0}
                 })()
                 const isCooldown = (() => {
                     if (history.dispense_log[db.cards[req.params.card].user] && machine.antihog_trigger && machine.antihog_min) {
@@ -354,8 +356,9 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     history.dispense_log[db.cards[req.params.card].user].push({
                         machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
-                        cost: cost[0],
-                        free_play: user.free_play || cost[1],
+                        cost: cost.val,
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         status: false,
                         cool_down: isCooldown,
                         time: Date.now().valueOf()
@@ -371,13 +374,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     saveTimeout = setTimeout(saveDatabase, 5000);
                     if (machine && machine.vfd) {
                         //後でもう一度試してください
-                        callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$8FA282C582B582A088EA8E9A8AAC82B782C682A882C982D082C5@$$! **' : '** Try again later! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                        callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$8FA282C582B582A088EA8E9A8AAC82B782C682A882C982D082C5@$$! **' : '** Try again later! **', (cost.free_play) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                     }
                     res.status(407).json({
                         user_name: user.name,
-                        cost: cost[0],
+                        cost: cost.val,
                         balance: user.credits,
-                        free_play: user.free_play || cost[1],
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         status: false,
                         discount: !!(discount),
                         cool_down: isCooldown,
@@ -386,18 +390,19 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                         japanese: !!((machine && machine.jpn) || db.jpn)
                     });
                     console.log(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : Cooldown is active`)
-                } else if ((user.credits - cost[0]) >= 0 || user.free_play) {
-                    if (!user.free_play && !cost[1])
-                        user.credits = user.credits - cost[0]
+                } else if (cost.free_play || ((user.credits - cost.val) >= 0)) {
+                    if (!cost.free_play)
+                        user.credits = user.credits - cost.val
                     db.users[db.cards[req.params.card].user] = user;
                     if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
                         machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
-                        cost: cost[0],
+                        cost: cost.val,
                         discount: !!(discount),
-                        free_play: user.free_play || cost[1],
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         cool_down: isCooldown,
                         status: true,
                         time: Date.now().valueOf()
@@ -414,9 +419,10 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     history.machines_dispense[(req.params.machine_id).toUpperCase()].push({
                         user: db.cards[req.params.card].user,
                         card: req.params.card,
-                        cost: cost[0],
+                        cost: cost.val,
                         discount: !!(discount),
-                        free_play: user.free_play || cost[1],
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         status: true,
                         time: Date.now().valueOf()
                     })
@@ -425,13 +431,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     if (user.credits > db.low_balance) {
                         if (machine && machine.vfd) {
                             //ゲームをしましょう
-                            callVFD(machine, (((machine && machine.jpn) || db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, (((machine && machine.jpn) || db.jpn) ? '$$835188EA838082BB82B582DC82B582E582A4@$$' : 'Lets play the game!'), (cost.free_play) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(200).json({
                             user_name: user.name,
-                            cost: cost[0],
+                            cost: cost.val,
                             balance: user.credits,
-                            free_play: user.free_play || cost[1],
+                            free_play: cost.free_play,
+                            time_left: cost.time_left,
                             status: true,
                             discount: !!(discount),
                             cool_down: isCooldown,
@@ -442,13 +449,14 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     } else {
                         if (machine && machine.vfd) {
                             //カード残高が少ない
-                            callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost[1]) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
+                            callVFD(machine, ((machine && machine.jpn) || db.jpn) ? '** $$834A88EA83688E638D8282AA8FAD82C882A2@$$! **' : '** Low Balance! **', (cost.free_play) ? 'Free Play' : `${(db.jpn) ? '$$8DE0957A@$$' : 'Wallet'} ${(db.credit_to_currency_rate) ? ((db.jpn) ? '$$818F@$$' : '$') : ''}${(db.credit_to_currency_rate) ? (user.credits * db.credit_to_currency_rate) : user.credits}`)
                         }
                         res.status(201).json({
                             user_name: user.name,
-                            cost: cost[0],
+                            cost: cost.val,
                             balance: user.credits,
-                            free_play: user.free_play || cost[1],
+                            free_play: cost.free_play,
+                            time_left: cost.time_left,
                             status: true,
                             discount: !!(discount),
                             cool_down: isCooldown,
@@ -472,16 +480,17 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                             console.error("FAULT Sending Withdraw Call");
                         }
                     }
-                    console.log(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost[1] || user.free_play) ? "Freeplay" : cost[0]})`)
+                    console.log(`${machine.name || (req.params.machine_id).toUpperCase()} - Card Scan: ${req.params.card} for ${db.cards[req.params.card].user} : New Balance = ${user.credits} (${(cost.free_play) ? "Freeplay" : cost.val})`)
                 } else {
                     if (!history.dispense_log[db.cards[req.params.card].user])
                         history.dispense_log[db.cards[req.params.card].user] = [];
                     history.dispense_log[db.cards[req.params.card].user].push({
                         machine: (req.params.machine_id).toUpperCase(),
                         card: req.params.card,
-                        cost: cost[0],
+                        cost: cost.val,
                         discount: !!(discount),
-                        free_play: user.free_play || cost[1],
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         status: false,
                         cool_down: isCooldown,
                         time: Date.now().valueOf()
@@ -499,9 +508,10 @@ app.get(['/dispense/:machine_id/:card', '/withdraw/:machine_id/:card'], readerAu
                     }
                     res.status(400).json({
                         user_name: user.name,
-                        cost: cost[0],
+                        cost: cost.val,
                         balance: user.credits,
-                        free_play: user.free_play || cost[1],
+                        free_play: cost.free_play,
+                        time_left: cost.time_left,
                         status: false,
                         discount: !!(discount),
                         cool_down: isCooldown,
@@ -637,6 +647,10 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                         if (db.cards[req.params.card] !== undefined &&
                             db.users[db.cards[req.params.card].user]) {
                             db.users[db.cards[req.params.card].user].free_play = true;
+                            if (pendingScan[(req.params.machine_id).toUpperCase()].data.time) {
+                                const time_in_hours = pendingScan[(req.params.machine_id).toUpperCase()].data.time;
+                                db.users[db.cards[req.params.card].user].free_play_time_limit = (Date.now().valueOf() + (time_in_hours * 3600000))
+                            }
                             if (!history.topup_log[db.cards[req.params.card].user])
                                 history.topup_log[db.cards[req.params.card].user] = [];
                             history.topup_log[db.cards[req.params.card].user].push({
@@ -651,6 +665,7 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                                 cost: 0,
                                 balance: db.users[db.cards[req.params.card].user].credits,
                                 free_play: true,
+                                time_left: db.users[db.cards[req.params.card].user].free_play_time_limit - Date.now().valueOf(),
                                 status: true,
                                 currency_mode: !!(db.credit_to_currency_rate),
                                 currency_rate: db.credit_to_currency_rate,
@@ -700,6 +715,7 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                                 cost: 0,
                                 balance: db.users[db.cards[req.params.card].user].credits,
                                 free_play: db.users[db.cards[req.params.card].user].free_play,
+                                time_left: db.users[db.cards[req.params.card].user].free_play_time_limit - Date.now().valueOf(),
                                 status: false,
                                 currency_mode: !!(db.credit_to_currency_rate),
                                 currency_rate: db.credit_to_currency_rate,
@@ -724,6 +740,7 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                                 cost: 0,
                                 balance: user.credits,
                                 free_play: user.free_play,
+                                time_left: db.users[db.cards[req.params.card].user].free_play_time_limit - Date.now().valueOf(),
                                 status: false,
                                 currency_mode: !!(db.credit_to_currency_rate),
                                 currency_rate: db.credit_to_currency_rate,
@@ -747,6 +764,7 @@ app.get('/callback/:machine_id/:card', readerAuth, (req, res) => {
                         cost: 0,
                         balance: user.credits,
                         free_play: user.free_play,
+                        time_left: db.users[db.cards[req.params.card].user].free_play_time_limit - Date.now().valueOf(),
                         status: false,
                         currency_mode: !!(db.credit_to_currency_rate),
                         currency_rate: db.credit_to_currency_rate,
@@ -1536,6 +1554,11 @@ app.get('/set/user/freeplay/:user/:value', manageAuth, (req, res) => {
         try {
             if (db.users[req.params.user] !== undefined) {
                 db.users[req.params.user].free_play = (req.params.value === "enable");
+                if (req.query.timeLimit && !isNaN(parseFloat(req.query.timeLimit))) {
+                    db.users[req.params.user].free_play_time_limit = (Date.now().valueOf() + (parseFloat(req.query.timeLimit) * 3600000));
+                } else {
+                    delete db.users[req.params.user].free_play_time_limit
+                }
                 res.status(200).send(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.user);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
@@ -1556,6 +1579,11 @@ app.get('/set/card/freeplay/:card/:value', manageAuth, (req, res) => {
         try {
             if (db.cards[req.params.card] !== undefined && db.users[db.cards[req.params.card].user] !== undefined) {
                 db.users[db.cards[req.params.card].user].free_play = (req.params.value === "enable");
+                if (req.query.timeLimit && !isNaN(parseFloat(req.query.timeLimit))) {
+                    db.users[db.cards[req.params.card].user].free_play_time_limit = (Date.now().valueOf() + (parseFloat(req.query.timeLimit) * 3600000));
+                } else {
+                    delete db.users[db.cards[req.params.card].user].free_play_time_limit
+                }
                 res.status(200).send(((req.params.value === "enable") ? "User is in Freeplay: " : "User is in credit mode: ") + req.params.card);
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
@@ -1577,7 +1605,7 @@ app.get('/scan/freeplay/:machine_id', manageAuth, (req, res) => {
             pendingScan[(req.params.machine_id).toUpperCase()] = {
                 command: "freeplay_card",
                 data: {
-                    time: null
+                    time: (req.query.timeLimit) ? parseFloat(req.query.timeLimit) : null
                 }
             }
             clearTimeout(pendingTimeout);
@@ -1862,6 +1890,11 @@ app.get('/set/machine/freeplay/:machine_id/:value', manageAuth, (req, res) => {
                 db.machines[(req.params.machine_id).toUpperCase()] = {};
             }
             db.machines[(req.params.machine_id).toUpperCase()].free_play = (req.params.value === "enable");
+            if (req.query.timeLimit && !isNaN(parseFloat(req.query.timeLimit))) {
+                db.machines[(req.params.machine_id).toUpperCase()].free_play_time_limit = (Date.now().valueOf() + (parseFloat(req.query.timeLimit) * 3600000));
+            } else {
+                delete db.machines[(req.params.machine_id).toUpperCase()].free_play_time_limit
+            }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send(((req.params.value === "enable") ? "Machine is in Freeplay: " : "Machine is in credit mode: ") + (req.params.machine_id).toUpperCase());
@@ -2022,7 +2055,12 @@ app.get('/set/arcade/currency/:multiplyer', manageAuth, (req, res) => {
 app.get('/set/arcade/freeplay/:value', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            db.free_play = (req.params.value === "enable");;
+            db.free_play = (req.params.value === "enable");
+            if (req.query.timeLimit && !isNaN(parseFloat(req.query.timeLimit))) {
+                db.free_play_time_limit = (Date.now().valueOf() + (parseFloat(req.query.timeLimit) * 3600000));
+            } else {
+                delete db.free_play_time_limit
+            }
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveDatabase, 5000);
             res.status(200).send("Global free play is " + ((req.params.value === "enable") ? "enabled" : "disabled"));

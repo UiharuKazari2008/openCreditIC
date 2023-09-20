@@ -122,10 +122,34 @@ body(style="overflow-x: hidden;")
                             button.close(type='button', data-dismiss='modal')
                                 span &times;
                         div.modal-body
+                            #typeAccordion
+                                .card
+                                    #headerDepositCredits.card-header
+                                        h5.mb-0
+                                            button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseDepositCredits' aria-expanded='true' aria-controls='collapseDepositCredits')
+                                                div.d-flex.justify-content-center
+                                                    div.d-flex.align-items-center.justify-content-center.pr-2
+                                                        i.fas.fa-coins
+                                                    span Credit(s)
+                                    #collapseDepositCredits.collapse.show(aria-labelledby='headerDepositCredits' data-parent='#typeAccordion')
+                                        .card-body
+                                            .form-group
+                                                label(for='initialBalance') Credits:
+                                                input#depositBalance.form-control.form-control-lg(type='number', name='depositBalance', placeholder="0 Credits")
+                                .card
+                                    #headerDepositFreeplay.card-header
+                                        h5.mb-0
+                                            button.p-0.btn.btn-link(data-toggle='collapse' data-target='#collapseDepositFreeplay' aria-expanded='true' aria-controls='collapseDepositFreeplay')
+                                                div.d-flex.justify-content-center
+                                                    div.d-flex.align-items-center.justify-content-center.pr-2
+                                                        i.fas.fa-hand-holding-dollar
+                                                    span Free Play
+                                    #collapseDepositFreeplay.collapse(aria-labelledby='headerDepositFreeplay' data-parent='#typeAccordion')
+                                        .card-body
+                                            .form-group
+                                                label(for='initialBalance') Time Limit (Hours):
+                                                input#freeplayTimeLimit.form-control.form-control-lg(type='number', name='depositBalance', placeholder="Time Limit in Hour(s) - Blank is unlimited")
                             #depositAccordion
-                                .form-group
-                                    label(for='initialBalance') Credits:
-                                    input#depositBalance.form-control.form-control-lg(type='number', name='depositBalance', placeholder="0 Credits")
                                 .card
                                     #headerDepositAdv.card-header
                                         h5.mb-0
@@ -145,7 +169,6 @@ body(style="overflow-x: hidden;")
                                                 label(for='cardName') Card S/N:
                                                 input#depositCard.form-control(type='text', name='cardName', placeholder="Users Name")
                         div.modal-footer
-                            button.btn.btn-success(type='button' onclick='freePlayUser(); return false;').mr-auto Free Play
                             button.btn.btn-secondary(type='button' onclick='clearDepositCredits(); return false;') Cancel
                             button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Deposit
             div.modal#waitForCardScanModal(tabindex='-1' role='dialog')

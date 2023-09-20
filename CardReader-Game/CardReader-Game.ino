@@ -144,10 +144,10 @@ void setup() {
                     NULL,        /* parameter of the task */
                     1,           /* priority of the task */
                     &Task1,      /* Task handle to keep track of created task */
-                    0);          /* pin task to core 0 */                  
-  delay(250); 
+                    0);          /* pin task to core 0 */
+  delay(250);
   bootScreen("BOOT_CPU2");
-  delay(250); 
+  delay(250);
   //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
   xTaskCreatePinnedToCore(
                     cpu1Loop,   /* Task function. */
@@ -160,7 +160,7 @@ void setup() {
   delay(500);
 }
 void loop() {
-  
+
 }
 
 //////////////////////
@@ -556,13 +556,14 @@ void displayCreditReponse(int httpCode, String message) {
   const float cost = doc["cost"];
   const float balance = doc["balance"];
   const bool free_play = doc["free_play"];
+  const int time_left = doc["time_left"];
   const bool currency_mode = doc["currency_mode"];
   const float currency_rate = (currency_mode) ? doc["currency_rate"] : 0;
   const bool jpn = doc["japanese"];
   u8g2.clearBuffer();
 
   // Low Balanace or No Balance
-  if (httpCode != 200 && free_play == false) {
+  if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
     u8g2.setDrawColor(1);
     u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
     u8g2.sendBuffer();
@@ -638,12 +639,22 @@ void displayCreditReponse(int httpCode, String message) {
         int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
         u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
     #endif
+  } else if (free_play == true && time_left != -1 && time_left <= 1800000)) {
+    #ifdef DISPLAY_I2C_128x32
+        // Nothing
+    #else
+        String lowtime = (sys_jpn == true) ? "時間がない" : "Ending Soon!";
+        u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+        int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
+        int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
+        u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
+    #endif
   }
 
   u8g2.setDrawColor(1);
   u8g2.sendBuffer();
 
-  if (httpCode != 200 && free_play == false) {
+  if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
     // Flash Low Balance or No Balance
     int count = 3;
     delay(250);

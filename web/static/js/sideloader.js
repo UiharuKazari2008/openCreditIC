@@ -324,7 +324,19 @@ function depositCredits() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    let _url = new URL(`${document.location.origin}/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}`);
+    let _url
+    if (document.getElementById('freeplayTimeLimit').classList.contains('show')) {
+        _url = new URL(`${document.location.origin}/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}`);
+        try {
+            const val = parseFloat(document.getElementById('freeplayTimeLimit').value)
+            if (!isNaN(val) && val > 0)
+                _url.searchParams.set('timeLimit', val);
+        } catch (e) {
+            console.error(`Failed to parse freeplay time`, e)
+        }
+    } else {
+        _url = new URL(`${document.location.origin}/deposit/${(userID) ? ('user/' + userID) : ((cardID) ? ('card/' + cardID) : ('scan/' + machineID))}/${credits}`);
+    }
     if (typeof SEQ_APP_URL !== 'undefined')
         _url.pathname = SEQ_APP_URL + _url.pathname;
     if (key)
