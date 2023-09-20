@@ -29,7 +29,7 @@
             input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
         .form-group
             label(for='showUserNotes') Notes:
-            textarea#showUserNotes.form-control(rows=3, name='userNotes', placeholder="")
+            textarea#showUserNotes.form-control(rows=3, name='userNotes', placeholder="" value=notes)
     div.d-flex.mb-3
         a.btn.btn-primary.w-100(href='#' onclick='updateUserData(); return false;').d-flex.text-white.mr-2
             div.d-flex.align-items-center.justify-content-center
