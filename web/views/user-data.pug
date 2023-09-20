@@ -6,13 +6,13 @@
         .form-group.p-0.pl-3
             label(for='showFreePlayUser') Free Play:
             .btn-group-toggle(data-toggle='buttons')
-                label.btn.btn-lg.w-100.freeplay(class=`${(free_play && (!free_play_time_limit || (free_play_time_limit && free_play_time_limit > 0))) ? 'active' : ''}`)
-                    if (free_play)
+                label.btn.btn-lg.w-100.freeplay(class=`${(free_play && (!free_play_time_limit || (free_play_time_limit && (free_play_time_limit - Date.now().valueOf()) > 0))) ? 'active' : ''}`)
+                    if (free_play && (!free_play_time_limit || (free_play_time_limit && (free_play_time_limit - Date.now().valueOf()) > 0)))
                         input#showFreePlayUser(type='checkbox' checked='' autocomplete='off')
                     else
                         input#showFreePlayUser(type='checkbox' autocomplete='off')
                     i.fas.fa-circle-check
-    if (free_play_time_limit && free_play_time_limit > 0)
+    if (free_play_time_limit && (free_play_time_limit - Date.now().valueOf()) > 0)
         div
             .form-group
                 label(for='showWalletBalance') Free Play Time:
@@ -29,7 +29,7 @@
             input#showUserContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.", value=contact)
         .form-group
             label(for='showUserNotes') Notes:
-            textarea#showUserNotes.form-control(rows=3, name='userNotes', placeholder="" value=notes)
+            textarea#showUserNotes.form-control(rows=3, name='userNotes', placeholder="", content=notes)
     div.d-flex.mb-3
         a.btn.btn-primary.w-100(href='#' onclick='updateUserData(); return false;').d-flex.text-white.mr-2
             div.d-flex.align-items-center.justify-content-center
