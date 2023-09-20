@@ -12,6 +12,10 @@
                     else
                         input#showFreePlayUser(type='checkbox' autocomplete='off')
                     i.fas.fa-circle-check
+        if (free_play_time_limit)
+            .form-group.col.p-0
+                label(for='showWalletBalance') Free Play Time:
+                input#showWalletBalance.form-control(type='text', name='showWalletBalance', disabled, placeholder="Unlimited", value=`${(free_play_time_limit) ? (free_play_time_limit / (60000)) + ' Minute(s)' : '' }`)
     div
         .form-group
             label(for='showUserID') Customer ID:
