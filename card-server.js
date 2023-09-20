@@ -822,16 +822,22 @@ app.get('/blocked_callback/:machine_id/:card', readerAuth, (req, res) => {
 app.get('/deposit/scan/:machine_id/:credits', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            pendingScan[(req.params.machine_id).toUpperCase()] = {
-                command: "deposit_card",
-                data: {
-                    value: parseFloat(req.params.credits)
+            if (!isNaN(parseFloat(req.params.credits))) {
+                pendingScan[(req.params.machine_id).toUpperCase()] = {
+                    command: "deposit_card",
+                    data: {
+                        value: parseFloat(req.params.credits)
+                    }
                 }
+                clearTimeout(pendingTimeout);
+                pendingTimeout = setTimeout(() => {
+                    delete pendingScan[(req.params.machine_id).toUpperCase()];
+                }, 30000)
+                res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
+                console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
+            } else {
+                res.status(400).send(`Invalid credit amount`);
             }
-            clearTimeout(pendingTimeout);
-            pendingTimeout = setTimeout(() => { delete pendingScan[(req.params.machine_id).toUpperCase()]; }, 30000)
-            res.status(200).send(`Waiting for card to be scanned to deposit ${req.params.credits} credits`);
-            console.log(`Pending Card TopUp: Add Balance = ${req.params.credits}`);
         } catch (e) {
             console.error("Failed to read cards database", e)
             res.status(500).send('Server Error');
@@ -844,7 +850,7 @@ app.get('/deposit/card/:card/:credits', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
             if (db.cards[req.params.card] !== undefined &&
-                db.users[db.cards[req.params.card].user]) {
+                db.users[db.cards[req.params.card].user] && !isNaN(parseFloat(req.params.credits))) {
                 let user = db.users[db.cards[req.params.card].user];
                 user.credits = user.credits + parseFloat(req.params.credits);
                 db.users[db.cards[req.params.card].user] = user;
@@ -874,7 +880,7 @@ app.get('/deposit/card/:card/:credits', manageAuth, (req, res) => {
 app.get('/deposit/user/:user/:credits', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.users[req.params.user] !== undefined) {
+            if (db.users[req.params.user] !== undefined && !isNaN(parseFloat(req.params.credits))) {
                 let user = db.users[req.params.user];
                 user.credits = user.credits + parseFloat(req.params.credits);
                 db.users[req.params.user] = user;

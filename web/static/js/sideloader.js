@@ -325,7 +325,7 @@ function depositCredits() {
         console.error(`Failed to parse card info`, e)
     }
     let _url
-    if (document.getElementById('freeplayTimeLimit').classList.contains('show')) {
+    if (document.getElementById('collapseDepositFreeplay').classList.contains('show')) {
         _url = new URL(`${document.location.origin}/${(userID) ? ('set/user/freeplay/' + userID + '/enabled') : ((cardID) ? ('set/card/freeplay/' + cardID + '/enabled') : ('scan/freeplay/' + machineID))}`);
         try {
             const val = parseFloat(document.getElementById('freeplayTimeLimit').value)
@@ -686,6 +686,7 @@ function clearDepositCredits() {
     $("#waitForCardScanModal").modal("hide");
     document.getElementById('depositBalance').value = '';
     document.getElementById('depositUser').value = '';
+    document.getElementById('freeplayTimeLimit').value = '';
     document.getElementById('depositCard').value = '';
 }
 function clearUser() {
