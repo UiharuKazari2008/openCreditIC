@@ -252,13 +252,14 @@ app.get(['/get/machine/:machine_id/:mode', '/get/machine/:machine_id'], readerAu
                     ...db.machines[(req.params.machine_id).toUpperCase()]
                 })
             } else {
-                res.status(200).json({
+                res.status(404).json({
                     cost: db.cost,
                     free_play: db.free_play,
                     japanese: db.jpn,
                     currency_mode: !!(db.credit_to_currency_rate),
                     currency_rate: db.credit_to_currency_rate
                 })
+                console.error("Unknown Card Reader Login - " + (req.params.machine_id).toUpperCase())
             }
         } catch (e) {
             console.error("Failed to read cards database", e)
