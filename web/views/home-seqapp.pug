@@ -46,6 +46,9 @@ body(style="overflow-x: hidden;")
                                             .form-group
                                                 label(for='userContact') Contact Info:
                                                 input#userContact.form-control(type='text', name='cardName', placeholder="Name, Phone Number, Etc.")
+                                            .form-group
+                                                label(for='userContact') Notes:
+                                                input#userNotes.form-control(type='textarea', name='userNotes', placeholder="")
                                 .card
                                     #headingTwo.card-header
                                         h5.mb-0
@@ -144,7 +147,7 @@ body(style="overflow-x: hidden;")
                         div.modal-footer
                             button.btn.btn-success(type='button' onclick='freePlayUser(); return false;').mr-auto Free Play
                             button.btn.btn-secondary(type='button' onclick='clearDepositCredits(); return false;') Cancel
-                            button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Create
+                            button.btn.btn-primary(type='submit' onclick='depositCredits(); return false;') Deposit
             div.modal#waitForCardScanModal(tabindex='-1' role='dialog')
                 div.modal-dialog
                     div.modal-content

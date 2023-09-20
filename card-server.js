@@ -1170,8 +1170,9 @@ app.get('/register/scan/:machine_id', manageAuth, (req, res) => {
             const userId = `user-${(Date.now()).valueOf()}`
             const user = {
                 credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
-                name: req.query.user_name || null,
-                contact: req.query.user_contact || null,
+                name: (req.query.user_name) ? decodeURIComponent(req.query.user_name) : null,
+                contact: (req.query.user_contact) ? decodeURIComponent(req.query.user_contact) : null,
+                notes: (req.query.user_notes) ? decodeURIComponent(req.query.user_notes) : null,
                 locked: false,
                 free_play: false,
                 date_created: Date.now().valueOf(),
@@ -1182,8 +1183,8 @@ app.get('/register/scan/:machine_id', manageAuth, (req, res) => {
                 command: "register_new_card",
                 data: {
                     user: userId,
-                    name: req.query.card_name || null,
-                    contact: req.query.card_contact || null,
+                    name: (req.query.card_name) ? decodeURIComponent(req.query.card_name) : null,
+                    contact: (req.query.card_contact) ? decodeURIComponent(req.query.card_contact) : null,
                     locked: false
                 }
             }
@@ -1205,8 +1206,9 @@ app.get('/register/scan/:machine_id/:user', manageAuth, (req, res) => {
             if (db.users[req.params.user] === undefined) {
                 const user = {
                     credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
-                    name: req.query.user_name || null,
-                    contact: req.query.user_contact || null,
+                    name: (req.query.user_name) ? decodeURIComponent(req.query.user_name) : null,
+                    contact: (req.query.user_contact) ? decodeURIComponent(req.query.user_contact) : null,
+                    notes: (req.query.user_notes) ? decodeURIComponent(req.query.user_notes) : null,
                     locked: false,
                     free_play: false,
                     date_created: Date.now().valueOf(),
@@ -1227,8 +1229,8 @@ app.get('/register/scan/:machine_id/:user', manageAuth, (req, res) => {
                 command: "register_new_card",
                 data: {
                     user: req.params.user,
-                    name: req.query.card_name || null,
-                    contact: req.query.card_contact || null,
+                    name: (req.query.card_name) ? decodeURIComponent(req.query.card_name) : null,
+                    contact: (req.query.card_contact) ? decodeURIComponent(req.query.card_contact) : null,
                     locked: false
                 }
             }
@@ -1259,6 +1261,11 @@ app.get('/update/user/:user', manageAuth, (req, res) => {
                 } else {
                     delete db.users[req.params.user].contact
                 }
+                if (req.query.user_notes && req.query.user_notes.length > 0) {
+                    db.users[req.params.user].notes = decodeURIComponent(req.query.user_notes)
+                } else {
+                    delete db.users[req.params.user].notes
+                }
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
                 console.log(`User Account Updated ${req.params.user}`)
@@ -1281,8 +1288,9 @@ app.get('/register/new/:user/:card', manageAuth, (req, res) => {
             if (db.users[req.params.user] === undefined) {
                 const user = {
                     credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
-                    name: req.query.user_name || null,
-                    contact: req.query.user_contact || null,
+                    name: (req.query.user_name) ? decodeURIComponent(req.query.user_name) : null,
+                    contact: (req.query.user_contact) ? decodeURIComponent(req.query.user_contact) : null,
+                    notes: (req.query.user_notes) ? decodeURIComponent(req.query.user_notes) : null,
                     locked: false,
                     free_play: false,
                     date_created: Date.now().valueOf(),
@@ -1303,8 +1311,8 @@ app.get('/register/new/:user/:card', manageAuth, (req, res) => {
                 db.cards[req.params.card] === undefined) {
                 let card = {
                     user: req.params.user,
-                    name: req.query.card_name || null,
-                    contact: req.query.card_contact || null,
+                    name: (req.query.card_name) ? decodeURIComponent(req.query.card_name) : null,
+                    contact: (req.query.card_contact) ? decodeURIComponent(req.query.card_contact) : null,
                     locked: false
                 }
                 db.cards[req.params.card] = card;

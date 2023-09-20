@@ -47,12 +47,15 @@ function registerUser() {
         const userID = document.getElementById('userID').value
         const userName = document.getElementById('userName').value
         const userContact = document.getElementById('userContact').value
+        const userNotes = document.getElementById('userNotes').value
         if (userID && userID.trim().length > 0)
             createUser = userID.trim();
         if (userName && userName.trim().length > 0)
             _url.searchParams.set('user_name', encodeURIComponent(userName.trim()));
         if (userContact && userContact.trim().length > 0)
             _url.searchParams.set('user_contact', encodeURIComponent(userContact.trim()));
+        if (userNotes && userNotes.trim().length > 0)
+            _url.searchParams.set('user_notes', encodeURIComponent(userNotes.trim()));
     } catch (e) {
         console.error(`Failed to parse user info`, e)
     }
@@ -124,6 +127,7 @@ function updateUserData() {
         const showFreePlayUser = document.getElementById('showFreePlayUser').checked;
         const showUserName = document.getElementById('showUserName').value;
         const showUserContact = document.getElementById('showUserContact').value;
+        const showUserNotes = document.getElementById('showUserNotes').value;
         if (showFreePlayUser)
             _url.searchParams.set('free_play', showFreePlayUser.toString())
         if (showUserName && showUserName.trim().length > 0) {
@@ -131,6 +135,9 @@ function updateUserData() {
         }
         if (showUserContact && showUserContact.trim().length > 0) {
             _url.searchParams.set('user_contact', encodeURIComponent(showUserContact.trim()));
+        }
+        if (showUserNotes && showUserNotes.trim().length > 0) {
+            _url.searchParams.set('user_notes', encodeURIComponent(showUserNotes.trim()));
         }
     } catch (e) {
         console.error(`Failed to parse user info`, e)
@@ -657,6 +664,7 @@ function clearRegisterUser() {
     document.getElementById('userID').value = '';
     document.getElementById('userName').value = '';
     document.getElementById('userContact').value = '';
+    document.getElementById('userNotes').value = '';
     document.getElementById('cardNum').value = '';
     document.getElementById('cardName').value = '';
     document.getElementById('cardContact').value = '';
