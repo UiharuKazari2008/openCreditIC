@@ -136,31 +136,49 @@ void setup() {
   #endif
   enableState = 1;
   Serial.println("Reader is ready to init");
-  bootScreen("BOOT_CPU1");
-  xTaskCreatePinnedToCore(
-                    cpu2Loop,   /* Task function. */
-                    "Watchdog",     /* name of task. */
-                    10000,       /* Stack size of task */
-                    NULL,        /* parameter of the task */
-                    1,           /* priority of the task */
-                    &Task1,      /* Task handle to keep track of created task */
-                    0);          /* pin task to core 0 */
-  delay(250);
-  bootScreen("BOOT_CPU2");
-  delay(250);
-  //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
-  xTaskCreatePinnedToCore(
-                    cpu1Loop,   /* Task function. */
-                    "ReaderTask",     /* name of task. */
-                    10000,       /* Stack size of task */
-                    NULL,        /* parameter of the task */
-                    1,           /* priority of the task */
-                    &Task2,      /* Task handle to keep track of created task */
-                    1);          /* pin task to core 1 */
-  delay(500);
+  #ifdef MULTICORE_ENABLE
+    bootScreen("BOOT_CPU1");
+    xTaskCreatePinnedToCore(
+                      cpu2Loop,   /* Task function. */
+                      "Watchdog",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      1,           /* priority of the task */
+                      &Task1,      /* Task handle to keep track of created task */
+                      0);          /* pin task to core 0 */
+    delay(250);
+    bootScreen("BOOT_CPU2");
+    delay(250);
+    //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
+    xTaskCreatePinnedToCore(
+                      cpu1Loop,   /* Task function. */
+                      "ReaderTask",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      1,           /* priority of the task */
+                      &Task2,      /* Task handle to keep track of created task */
+                      1);          /* pin task to core 1 */
+    delay(500);
+  #endif
 }
 void loop() {
-
+  #ifdef MULTICORE_ENABLE
+    // Handled by tasks
+  #else
+    int time_in_sec = esp_timer_get_time() / 1000000;
+    if (time_in_sec >= 86400) {
+      Serial.println("Daily Reboot");
+      ESP.restart();
+    } else if (lastCheckIn <= time_in_sec - 18000) {
+      Serial.println("Check in");
+      getConfig(false);
+    }
+    checkWiFiConnection();
+    #ifdef REMOTE_ACCESS
+      server.handleClient();
+    #endif
+    runtime();
+  #endif
 }
 
 //////////////////////
@@ -171,7 +189,7 @@ void loop() {
 void checkWiFiConnection() {
   if (WiFi.status() != WL_CONNECTED) {
     setLEDs(CRGB::Magenta);
-    bootScreen(WiFi.macAddress().c_str());
+    bootScreen("NETWORK");
     Serial.println("WiFi not connected. Attempting to reconnect...");
     WiFi.hostname("SimpleCard");
     WiFi.disconnect(true);
@@ -225,9 +243,23 @@ void getConfig(bool firstStart) {
     sys_button_remote_action = doc["button_callback"];
     sys_callbackOnBlockedTap = doc["has_blocked_callback"];
     lastCheckIn = esp_timer_get_time() / 1000000;
+  } else if (httpCode >= 400 && httpCode <= 499) {
+    while(true) {
+      if (firstStart == true) {
+        bootScreen("AUTH FAIL");
+        delay(5000);
+        bootScreen(WiFi.macAddress());
+        delay(60000);
+        ESP.restart();
+      } else {
+        ESP.restart();
+      }
+    };
   } else {
     Serial.println("Can't get config");
     if (firstStart == true) {
+      bootScreen("AUTH FAIL");
+      delay(5000);
       ESP.restart();
     }
   }
@@ -261,12 +293,39 @@ String getUID() {
 //////////////////////
 
 // Primary Loop function
+#ifdef MULTICORE_ENABLE
 void cpu1Loop( void * pvParameters ) {
   Serial.print("Primary Task running on core ");
   Serial.println(xPortGetCoreID());
 
   for(;;) {
-    if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
+    runtime();
+  }
+}
+// Secoundary Loop Function
+void cpu2Loop( void * pvParameters ) {
+  Serial.print("Secoundary Task running on core ");
+  Serial.println(xPortGetCoreID());
+
+  for(;;) {
+    int time_in_sec = esp_timer_get_time() / 1000000;
+    if (time_in_sec >= 86400) {
+      Serial.println("Daily Reboot");
+      ESP.restart();
+    } else if (lastCheckIn <= time_in_sec - 18000) {
+      Serial.println("Check in");
+      getConfig(false);
+    }
+    checkWiFiConnection();
+    #ifdef REMOTE_ACCESS
+      server.handleClient();
+    #endif
+  }
+}
+#endif
+// Primary Loop Function
+void runtime() {
+  if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
       // Game Enabled
       if (blockState == 1) {
         // Was Previouly Blocked
@@ -325,36 +384,15 @@ void cpu1Loop( void * pvParameters ) {
         }
       }
     }
-  }
-}
-// Secoundary Loop Function
-void cpu2Loop( void * pvParameters ) {
-  Serial.print("Secoundary Task running on core ");
-  Serial.println(xPortGetCoreID());
-
-  for(;;) {
-    int time_in_sec = esp_timer_get_time() / 1000000;
-    if (time_in_sec >= 86400) {
-      Serial.println("Daily Reboot");
-      ESP.restart();
-    } else if (lastCheckIn <= time_in_sec - 18000) {
-      Serial.println("Check in");
-      getConfig(false);
-    }
-    checkWiFiConnection();
-    #ifdef REMOTE_ACCESS
-      server.handleClient();
-    #endif
-  }
 }
 // Handle Card Scanner
 void handleCardRead() {
-#ifdef RFID_I2C
+  #ifdef RFID_I2C
   String uid = getUID();
   if (uid != "") {
-#else
+  #else
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-#endif
+  #endif
     if (blockState == 1) {
       if (sys_callbackOnBlockedTap == true) {
       #ifdef RFID_I2C
@@ -409,7 +447,9 @@ void handleCardRead() {
       }
     }
   } else {
-    delay(1000);
+    #ifdef RFID_I2C
+      delay(1000);
+    #endif
   }
 }
 // Handle Blocked Callback Tap - Needs Card UID
@@ -508,6 +548,7 @@ void displayEcoModeScreen() {
     int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
     int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
     u8g2.drawUTF8(centerX, centerY, string);
+    u8g2.setFont(u8g2_font_streamline_ecology_t);
     int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
     u8g2.drawGlyph(centerGlX, centerGlY, 58);
     u8g2.setDrawColor(1);
@@ -639,15 +680,22 @@ void displayCreditReponse(int httpCode, String message) {
         int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
         u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
     #endif
-  } else if (free_play == true && time_left != -1 && time_left <= 1800000)) {
+  } else if (free_play == true && time_left != -1 && time_left <= 1800000) {
     #ifdef DISPLAY_I2C_128x32
         // Nothing
     #else
-        String lowtime = (sys_jpn == true) ? "時間がない" : "Ending Soon!";
+        unsigned long time_left_ms = time_left % 60000;  // Get remaining milliseconds
+        unsigned int minutes = (time_left - time_left_ms) / 60000;  // Convert to minutes
+        char time_str[20];
+        if (sys_jpn == true) {
+          sprintf(time_str, "残り%d分!", minutes);
+        } else {
+          sprintf(time_str, "%d Minutes Left!", minutes);
+        }
         u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-        int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
+        int messageWidth = u8g2.getUTF8Width(time_str);
         int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
-        u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
+        u8g2.drawUTF8(centerMsgX, 60, time_str);
     #endif
   }
 
@@ -828,6 +876,7 @@ void bootScreen(String input_message) {
     int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2 + 15;
   #endif
   u8g2.drawStr(centerX, centerY, string);
+  u8g2.setDrawColor(1);
   u8g2.setColorIndex(1);
   u8g2.sendBuffer();
 }

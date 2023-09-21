@@ -100,6 +100,15 @@ const char *ssid = "OCI_NET";
 const char *password = "OCI_NET_SECURE029587";
 const char *apiUrl = "http://192.168.0.2:1777/"; // URL to access central server
 const char *deviceKey = "API_KEY_FOR_CARD_READERS"; // device_key from config.json
+
+// Enable Remote Access
+#define REMOTE_ACCESS
+// Use Slimline 128x32 display
+//#define DISPLAY_I2C_128x32
+// Use alternative I2C card reader
+//#define RFID_I2C
+// Enable Multicore Tasking
+//#define MULTICORE_ENABLE
 ```
 ### Hardware
 Any Optional hardware can be ommited and the reader will work the same
