@@ -813,14 +813,16 @@ app.get('/blocked_callback/:machine_id/:card', readerAuth, (req, res) => {
                     //ちょっと 待って
                     callVFDCenter(db.machines[(req.params.machine_id).toUpperCase()], ((db.machines[(req.params.machine_id).toUpperCase()] && db.machines[(req.params.machine_id).toUpperCase()].jpn) || db.jpn) ? '$$82A882E882C682A2208DC58EFC@$$...' : 'Please Wait...')
                 }
-                request.get({
-                    url: db.machines[(req.params.machine_id).toUpperCase()].blocked_callback,
-                }, async function (err, res, body) {
-                    if (err) {
-                        console.error(err.message);
-                        console.error("FAULT Getting Response Data");
-                    }
-                })
+                if (!req.query.request_only) {
+                    request.get({
+                        url: db.machines[(req.params.machine_id).toUpperCase()].blocked_callback,
+                    }, async function (err, res, body) {
+                        if (err) {
+                            console.error(err.message);
+                            console.error("FAULT Getting Response Data");
+                        }
+                    })
+                }
             } else {
                 res.status(404).send("No Callback for this machine");
             }

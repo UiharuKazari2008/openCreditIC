@@ -108,7 +108,7 @@ const char *deviceKey = "API_KEY_FOR_CARD_READERS"; // device_key from config.js
 // Use alternative I2C card reader
 //#define RFID_I2C
 // Enable Multicore Tasking
-//#define MULTICORE_ENABLE
+#define MULTICORE_ENABLE
 ```
 ### Hardware
 Any Optional hardware can be ommited and the reader will work the same
