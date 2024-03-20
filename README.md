@@ -4,6 +4,13 @@ Cheap Networked RFID Reader(s) and cloud-free server for arcade cabinet credit p
 
 ![Screen Shot 2023-09-15 at 13.05.11.png](.assets%2FScreen%20Shot%202023-09-15%20at%2013.05.11.png)
 
+## Sequenzia App Support
+
+![image](https://github.com/UiharuKazari2008/openCreditIC/assets/15165770/4c7e62af-b158-4715-baae-d7e1856a90c1)
+
+![image](https://github.com/UiharuKazari2008/openCreditIC/assets/15165770/502dee63-4478-41c9-a608-71bb03a05258)
+
+
 ## NOTICE
 At this time, I don't take responsibility for any damages caused if this is used commercially. Once this warning is removed you can consider the software to be "production" ready. More testing and feedback is still required
 
