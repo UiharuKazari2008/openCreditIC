@@ -26,12 +26,14 @@ Please create issues to address feature requests and report bugs.
 * Addressable POS Card Reader to provision cards and add credits
 * Credit Withdraw History
 * Credit Deposit History
-* Supports multiple sites/locations 
+* Supports multiple sites/locations
+* HappyCAB MCU serial communication
+  * Enable state toggle
+  * Send coin blocker state
+  * Use reader display for messageing 
 
 ## TODO
 * VFD RS232 Communication (Currently requires AMaverlousDisplay)
-* Cleanup of Arduino Code
-* Card Reader check in
 * Encrypted communication
 
 ## Integrations
@@ -42,6 +44,7 @@ Supports various other ACR developed Arcade solutions
   - On Credit Dispensed
   - On Valid Card Tap when Coin Blocked is activated
     - Example: Power on cabinet when powered off
+- HappyCAB Cabinet MCU I/O and Display
 
 ## Installation
 1. Install NodeJS on your system of choice
