@@ -45,6 +45,7 @@ Supports various other ACR developed Arcade solutions
   - On Valid Card Tap when Coin Blocked is activated
     - Example: Power on cabinet when powered off
 - HappyCAB Cabinet MCU I/O and Display
+- Connections to Sequenzia as a Embedded Application
 
 ## Installation
 1. Install NodeJS on your system of choice
