@@ -10,14 +10,19 @@
 #include <FastLED.h>
 #include "images.h"
 #include "config.h"
+#include "melody.h"
 
-#define SS_PIN 16     // Define the SS pin (Slave Select) for the RFID module.
-#define RST_PIN 17    // Define the RST pin for the RFID module.
-#define RELAY_PIN 13  // Define the pin connected to the relay.
-#define BLOCK_PIN 14  // Define the pin connected to the LDR for Coin Blocking from cab
-#define BUTTON_PIN 5  // Button used for front panel button
-#define LED_PIN 12    // Define the pin connected to the WS2812 LED strip.
-#define NUM_LEDS 1    // Define the number of LEDs in the strip.
+#define SS_PIN 5      // Define the SS pin (Slave Select) for the RFID module.
+#define RST_PIN 15     // Define the RST pin for the RFID module.
+#define RELAY_PIN 13   // Define the pin connected to the relay.
+#define BLOCK_PIN 14   // Define the pin connected to the LDR for Coin Blocking from cab
+#define BUTTON_PIN 4   // Button used for front panel button
+#define LED_PIN 12     // Define the pin connected to the WS2812 LED strip.
+#define NUM_LEDS 1     // Define the number of LEDs in the strip.
+#define HAPPYCAB_TX 2 // Define the pin to communicate with the cabinet MCU (if used)
+#define HAPPYCAB_RX 4 // Define the pin to communicate with the cabinet MCU (if used)
+#define LONG_PRESS_TIME 1 // Define long press time (sec) for long press action on button
+#define EXTRA_PRESS_TIME 3 // Define long press time (sec) for long press action on button
 
 CRGB leds[NUM_LEDS];  // Create an array of CRGB colors for the LEDs.
 #ifdef RFID_I2C
@@ -34,8 +39,13 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
 #ifdef REMOTE_ACCESS
 WebServer server(80);
 #endif
+#ifdef HAPPYCAB_ENABLE
+HardwareSerial cardReaderSerial(2);
+#endif
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+TaskHandle_t Task3;
+TaskHandle_t Task4;
 
 int enableState = 0;
 int blockState = 0;
@@ -43,6 +53,17 @@ int blockOverride = 0;
 int displayState = -1;
 bool waitingForUnblock = false;
 bool lastButtonState = false;
+bool handledButtonState = false;
+unsigned long buttonPressStartTime = 0;
+int mcuState = -1;
+int displayTimeout = 0;
+int previousDisplayTimeout = 0;
+int typeOfMessage = -1;
+int messageIcon = 0;
+String messageText = "";
+bool isJpnMessage = false;
+int brightMessage = 1;
+bool invertMessage = false;
 
 int lastCheckIn = 0;
 
@@ -134,9 +155,47 @@ void setup() {
     server.begin();
     Serial.println("Remote Access Enabled");
   #endif
-  enableState = 1;
+
+  #ifdef HAPPYCAB_ENABLE
+    bootScreen("CR_LINK");
+    cardReaderSerial.begin(9600, SERIAL_8N1, 16, 17);
+    if (!cardReaderSerial) {
+      bootScreen("CARDREADER_FAIL_1");
+      Serial.println("Serial Port did no load!");
+      while (1) { // Don't continue with invalid configuration
+        delay (1000);
+      }
+    } else {
+      cardReaderSerial.println("HELLO::NO_DATA_ED_");
+    }
+    delay (500);
+    enableState = 0;
+  #else
+    enableState = 1;
+  #endif
   Serial.println("Reader is ready to init");
   #ifdef MULTICORE_ENABLE
+    bootScreen("BOOT_HCCL");
+    //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
+    xTaskCreatePinnedToCore(
+                      cardReaderTXLoop,   /* Task function. */
+                      "mcuTX",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      1,           /* priority of the task */
+                      &Task3,      /* Task handle to keep track of created task */
+                      1);          /* pin task to core 1 */
+    delay(500);
+    //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
+    xTaskCreatePinnedToCore(
+                      cardReaderRXLoop,   /* Task function. */
+                      "mcuRX",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      1,           /* priority of the task */
+                      &Task4,      /* Task handle to keep track of created task */
+                      1);          /* pin task to core 1 */
+    delay(500);
     bootScreen("BOOT_CPU1");
     xTaskCreatePinnedToCore(
                       cpu2Loop,   /* Task function. */
@@ -309,6 +368,7 @@ void cpu2Loop( void * pvParameters ) {
 
   for(;;) {
     int time_in_sec = esp_timer_get_time() / 1000000;
+    int currentMillis = millis();
     if (time_in_sec >= 86400) {
       Serial.println("Daily Reboot");
       ESP.restart();
@@ -317,14 +377,153 @@ void cpu2Loop( void * pvParameters ) {
       getConfig(false);
     }
     checkWiFiConnection();
+    #ifdef BEEPER_ENABLE
+    if (startMelody == true) {
+      if (currentMillis - previousMelodyMillis >= pauseBetweenNotes) {
+        previousMelodyMillis = currentMillis;
+        if (melodyPlay == 0) {
+          playMelody(credit_tone, credit_tone_dur, sizeof(credit_tone_dur) / sizeof(int));
+        } else if (melodyPlay == 1) {
+          playMelody(blocked_tone, blocked_tone_dur, sizeof(credit_tone_dur) / sizeof(int));
+        }
+      }
+    }
+    #endif
     #ifdef REMOTE_ACCESS
       server.handleClient();
     #endif
   }
 }
+int last_card_response = -1;
+String last_card_data = "";
+bool send_boot = false;
+bool send_button_0 = false;
+bool send_button_1 = false;
+bool send_button_2 = false;
+bool send_button_3 = false;
+bool send_button_4 = false;
+bool send_button_5 = false;
+#ifdef HAPPYCAB_ENABLE
+// MCU Talk Loop Function
+void cardReaderTXLoop( void * pvParameters ) {
+  for(;;) {
+    cardReaderSerial.println("COIN_ENABLE::" + String((digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) ? "1" : "0") + "::");
+    delay(100);
+    if (last_card_response != -1) {
+      // Send Credit If Needed
+      if (blockOverride == 1 && (last_card_response >= 200 && last_card_response < 300)) {
+        for (int i = 0; i < 2; i++) {
+          cardReaderSerial.println("GPIO::CREDIT::");
+          delay(100);
+        }
+      }
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("COIN_DISPENSE::" + String(last_card_response) +  "::" + last_card_data + "::");
+        delay(100);
+      }
+      last_card_response = -1;
+      last_card_data = "";
+    } else if (send_boot == true) {
+      // Send Boot Command
+      send_boot = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BOOT_REQUEST::NO_DATA::");
+        delay(100);
+      }
+    } else if (send_button_0 == true) {
+      // Send Boot Command
+      send_button_0 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::0::");
+        delay(100);
+      }
+    } else if (send_button_1 == true) {
+      // Send Boot Command
+      send_button_1 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::1::");
+        delay(100);
+      }
+    } else if (send_button_2 == true) {
+      // Send Boot Command
+      send_button_2 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::2::");
+        delay(100);
+      }
+    } else if (send_button_3 == true) {
+      // Send Boot Command
+      send_button_3 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::3::");
+        delay(100);
+      }
+    } else if (send_button_4 == true) {
+      // Send Boot Command
+      send_button_4 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::4::");
+        delay(100);
+      }
+    } else if (send_button_5 == true) {
+      // Send Boot Command
+      send_button_5 = false;
+      for (int i = 0; i < 2; i++) {
+        cardReaderSerial.println("BUTTON_REQUEST::5::");
+        delay(100);
+      }
+    }
+  }
+}
+void cardReaderRXLoop( void * pvParameters ) {
+  for(;;) {
+    if (cardReaderSerial.available()) {
+      static String receivedMessage = "";
+      char c;
+      bool messageStarted = false;
+
+      while (cardReaderSerial.available()) {
+        c = cardReaderSerial.read();
+        Serial.print(c);
+        if (c == '\n') {
+          if (!receivedMessage.isEmpty()) {
+            handleCRMessage(receivedMessage);
+            //Serial.println("Received: " + receivedMessage);
+          }
+          receivedMessage = "";
+        } else {
+          receivedMessage += c;
+        }
+
+      }
+    } else {
+      delay(1);
+    }
+  }
+}
+
+#endif
 #endif
 // Primary Loop Function
 void runtime() {
+  if (displayTimeout != 0) {
+    unsigned long currentMillis = millis();
+    if (millis() - previousDisplayTimeout >= displayTimeout) {
+      displayTimeout = 0;
+      typeOfMessage = -1;
+      messageIcon = 0;
+      messageText = "";
+      isJpnMessage = false;
+      brightMessage = 1;
+      invertMessage = false;
+    } else if (displayState != -2) {
+        if (typeOfMessage == 1) {
+          displayCustomMessage(messageIcon, messageText, isJpnMessage, brightMessage, invertMessage);
+        } else if (typeOfMessage == 0) {
+          displayCustomMessageSingleLine(messageIcon, messageText, isJpnMessage, brightMessage, invertMessage);
+        }
+    }
+  }
   if (digitalRead(BLOCK_PIN) == LOW || blockOverride == 1) {
       // Game Enabled
       if (blockState == 1) {
@@ -340,11 +539,34 @@ void runtime() {
           // Button is being pressed
           if (lastButtonState == false) {
             lastButtonState = true;
-            displayButtonDisplayEnabled();
-          }
+            handledButtonState = false;
+            buttonPressStartTime = millis();
+            #ifdef HAPPYCAB_ENABLE
+            //
+            #else
+              displayButtonDisplayEnabled();
+            #endif
+          } else if (lastButtonState == true && handledButtonState == false && millis() - buttonPressStartTime >= (EXTRA_PRESS_TIME * 1000)) {
+            // Extra Long press detected
+            send_button_5 = true;
+            handledButtonState = true;
+          } 
+        } else if (digitalRead(BUTTON_PIN) == HIGH && handledButtonState == true) {
+          // Button was released and already handled
+          lastButtonState = false;
+          handledButtonState = false;
         } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
           // Button was released
           lastButtonState = false;
+          #ifdef HAPPYCAB_ENABLE
+            if (millis() - buttonPressStartTime >= (LONG_PRESS_TIME * 1000)) {
+              // Long press detected
+              send_button_3 = true;
+            } else {
+              // Short press detected
+              send_button_1 = true;
+            }
+          #endif
         } else {
           // Normal State
           handleCardRead();
@@ -369,11 +591,33 @@ void runtime() {
           // Button is being pressed
           if (lastButtonState == false) {
             lastButtonState = true;
-            displayButtonDisplayDisabled();
-          }
+            buttonPressStartTime = millis();
+            #ifdef HAPPYCAB_ENABLE
+            //
+            #else
+              displayButtonDisplayDisabled();
+            #endif
+          } else if (lastButtonState == true && handledButtonState == false && millis() - buttonPressStartTime >= (EXTRA_PRESS_TIME * 1000)) {
+            // Extra Long press detected
+            send_button_4 = true;
+            handledButtonState = true;
+          } 
+        } else if (digitalRead(BUTTON_PIN) == HIGH && handledButtonState == true) {
+          // Button was released and already handled
+          lastButtonState = false;
+          handledButtonState = false;
         } else if (digitalRead(BUTTON_PIN) == HIGH && lastButtonState == true) {
           // Button was released
           lastButtonState = false;
+          #ifdef HAPPYCAB_ENABLE
+            if (millis() - buttonPressStartTime >= (LONG_PRESS_TIME * 1000)) {
+              // Long press detected
+              send_button_2 = true;
+            } else {
+              // Short press detected
+              send_button_0 = true;
+            }
+          #endif
         } else if (sys_callbackOnBlockedTap == true) {
           // Normal State (With Waiting Card)
           handleCardRead();
@@ -423,6 +667,9 @@ void handleCardRead() {
       http.end();
       Serial.println("HTTP Response code: " + String(httpCode));
 
+      last_card_response = httpCode;
+      last_card_data = httpResponse;
+
       if (httpCode >= 200 && httpCode < 300) {
         // Withdraw Approved
         Serial.println("Card OK, Dispense Credit");
@@ -457,13 +704,20 @@ void handleBlockedCallback(String uid) {
   if (uid != "") {
     Serial.println("Card " + uid + " was tapped in blocked state");
     HTTPClient http;
-    String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid + "?key=" + deviceKey;
+    #ifdef HAPPYCAB_ENABLE
+      String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid + "?request_only=true&key=" + deviceKey;
+    #else
+      String url = String(apiUrl) + "blocked_callback/" + WiFi.macAddress() + "/" + uid + "?key=" + deviceKey;
+    #endif
     Serial.println("Sending GET request to: " + url);
     http.begin(url);
     int httpCode = http.GET();
     http.end();
     Serial.println("HTTP Response code: " + String(httpCode));
     if (httpCode == 200) {
+      #ifdef HAPPYCAB_ENABLE
+        send_boot = true;
+      #endif
       displayBootUpReader();
       waitingForUnblock = true;
       Serial.println("Reader is in holding pattern until game unblocks...");
@@ -497,15 +751,156 @@ void handleDispenseCoin() {
   delay(100);
   digitalWrite(RELAY_PIN, LOW);
 }
+#ifdef HAPPYCAB_ENABLE
+
+bool ignore_next_state = false;
+void handleCRMessage(String inputString) {
+  int delimiterIndex = inputString.indexOf("::");
+  if (delimiterIndex != -1) {
+    int headerIndex = inputString.indexOf("::");
+    String header = inputString.substring(0, headerIndex);
+    if (header == "POWER_SWITCH") {
+      ignore_next_state = false;
+      int valueIndex = inputString.indexOf("::", headerIndex + 2);
+      String valueString = inputString.substring(headerIndex + 2, valueIndex);
+      int mcuState = valueString.toInt();
+      switch (mcuState) {
+        case 0:
+          enableState = 0;
+          waitingForUnblock == false;
+          break;
+        case 1:
+          enableState = 1;
+          waitingForUnblock == false;
+          break;
+        case 2:
+          enableState = 1;
+          if (digitalRead(BLOCK_PIN) == HIGH) {
+            waitingForUnblock == true;
+          }
+          break;
+        default:
+          break;
+      }
+    } else if (header == "DISPLAY_MESSAGE") {
+      int typeIndex = inputString.indexOf("::", headerIndex + 2);
+      String typeString = inputString.substring(headerIndex + 2, typeIndex);
+
+      int iconIndex = inputString.indexOf("::", typeIndex + 2);
+      String iconString = inputString.substring(typeIndex + 2, iconIndex);
+      messageIcon = iconString.toInt();
+      int textIndex = inputString.indexOf("::", iconIndex + 2);
+      messageText = inputString.substring(iconIndex + 2, textIndex);
+      int isJpIndex = inputString.indexOf("::", textIndex + 2);
+      String isJpString = inputString.substring(textIndex + 2, isJpIndex);
+      isJpnMessage = (isJpString == "t");
+      int brightIndex = inputString.indexOf("::", isJpIndex + 2);
+      String brightString = inputString.substring(isJpIndex + 2, brightIndex);
+      brightMessage = brightString.toInt();
+      int invertIndex = inputString.indexOf("::", brightIndex + 2);
+      String invertString = inputString.substring(brightIndex + 2, invertIndex);
+      invertMessage = (invertString == "t");
+      int timeoutIndex = inputString.indexOf("::", invertIndex + 2);
+      String timeoutString = inputString.substring(invertIndex + 2, timeoutIndex);
+      int timeout = timeoutString.toInt() * 1000;
+
+      if (messageIcon != -1 && messageText.isEmpty() == false && brightMessage != -1 && brightMessage >= 1 && brightMessage <= 255) {
+        if (typeString == "BIG") {
+          typeOfMessage = 1;
+        } else if (typeString == "SMALL") {
+          typeOfMessage = 0;
+        }
+        displayState = -1;
+        displayTimeout = (timeout > 0) ? timeout : 10000;
+        previousDisplayTimeout = millis();
+      } else {
+        displayState = -1;
+        displayTimeout = 0;
+        typeOfMessage = -1;
+        messageIcon = 0;
+        messageText = "";
+        isJpnMessage = false;
+        brightMessage = 1;
+        invertMessage = false;
+      }
+    } else if (header == "BLOCKER_OPEN") {
+      blockOverride = 1;
+    } else if (header == "BLOCKER_CLOSE") {
+      blockOverride = 0;
+    } else if (header == "REBOOT") {
+      bootScreen("UPSTREAM_MCU_RST");
+      delay(500);
+      ESP.restart();
+    }
+  }
+}
+#endif
 
 ///////////////////////////////
 // Display and LED Functions //
 ///////////////////////////////
 
+// Display Custom Message and Icon - DS Interupt
+void displayCustomMessage(int icon, String text, bool is_jpn, int brightness, bool invert) {
+  displayState = -2;
+  u8g2.setPowerSave(0);
+  u8g2.setContrast(brightness);
+  u8g2.clearBuffer();
+  if (invert == true) {
+    u8g2.setDrawColor(1);
+    u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
+    u8g2.sendBuffer();
+    u8g2.setDrawColor(0);
+    u8g2.setColorIndex(0);
+  }
+  const char* string = text.c_str();
+  #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((is_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2);
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+  #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, icon);
+      u8g2.setFont((is_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+  #endif
+  u8g2.setDrawColor(1);
+  u8g2.sendBuffer();
+}
+void displayCustomMessageSingleLine(int icon, String text, bool is_jpn, int brightness, bool invert) {
+  displayState = -2;
+  u8g2.setPowerSave(0);
+  u8g2.setContrast(brightness);
+  u8g2.clearBuffer();
+  if (invert == true) {
+    u8g2.setDrawColor(1);
+    u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
+    u8g2.sendBuffer();
+    u8g2.setDrawColor(0);
+    u8g2.setColorIndex(0);
+  }
+  const char* string = text.c_str();
+  u8g2.setFont((is_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+  int textWidth = u8g2.getUTF8Width(string);
+  int centerX = ((u8g2.getWidth() - textWidth) / 2) + (28 / 2);
+  int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (28 / 2);
+  int centerY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  u8g2.drawUTF8(centerX, centerY, string);
+  u8g2.setFont(u8g2_font_streamline_interface_essential_other_t);
+  int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
+  u8g2.drawGlyph(centerGlX, centerGlY, icon);
+  u8g2.setDrawColor(1);
+  u8g2.sendBuffer();
+}
 // Display Standby Screen (Game Enabled) - DS 10
 void displayStandbyScreen() {
-  if (displayState != 10) {
-    setLEDs(CRGB::Yellow);
+  if (displayTimeout == 0 && displayState != 10) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
@@ -533,65 +928,77 @@ void displayStandbyScreen() {
     u8g2.sendBuffer();
     displayState = 10;
   }
+  setLEDs(CRGB::Yellow);
 }
 // Display Standby Screen (Game Enabled) - DS 15
 void displayEcoModeScreen() {
-  if (displayState != 15) {
-    setLEDs(CRGB::Black);
+  if (displayTimeout == 0 && displayState != 15) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
-    const char* string = (sys_jpn == true) ? "省エネモード" : "Energy Saving";
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_ecology_t);
-    int centerGlY = u8g2.getHeight() / 2 + u8g2.getAscent() / 2;
-    u8g2.drawGlyph(centerGlX, centerGlY, 58);
+
+    const char* string = (sys_jpn == true) ? "マシンが使用不可" : "Unavailable";
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, 328);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 87);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+    #endif
     u8g2.setDrawColor(1);
+
     u8g2.sendBuffer();
     displayState = 15;
   }
+  setLEDs(CRGB::Black);
 }
 // Display Communication Started - DS Interupt
 void displayStartComm(String uid) {
-  displayState = -1;
+  if (displayTimeout == 0) {
+    displayState = -1;
+    u8g2.setPowerSave(0);
+    u8g2.setContrast(1);
+    u8g2.clearBuffer();
+    const char* string = (sys_jpn == true) ? "接続中" : "Communicating";
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, 510);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 84);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+    #endif
+    u8g2.sendBuffer();
+  }
   setLEDs(CRGB::Black);
-  u8g2.setPowerSave(0);
-  u8g2.setContrast(1);
-  u8g2.clearBuffer();
-  const char* string = (sys_jpn == true) ? "接続中" : "Communicating";
-  #ifdef DISPLAY_I2C_128x32
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_all_t);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawGlyph(centerGlX, centerGlY, 510);
-  #else
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, 84);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, 55, string);
-  #endif
-  u8g2.sendBuffer();
 }
 // Display Credit Response - DS Interupt
 void displayCreditReponse(int httpCode, String message) {
-  displayState = -1;
-  u8g2.setPowerSave(0);
-  u8g2.setContrast(255);
-  Serial.println(message);
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, message);
   const float cost = doc["cost"];
@@ -601,252 +1008,294 @@ void displayCreditReponse(int httpCode, String message) {
   const bool currency_mode = doc["currency_mode"];
   const float currency_rate = (currency_mode) ? doc["currency_rate"] : 0;
   const bool jpn = doc["japanese"];
-  u8g2.clearBuffer();
+  if (displayTimeout == 0) {
+    displayState = -1;
+    u8g2.setPowerSave(0);
+    u8g2.setContrast(255);
+    Serial.println(message);
+    u8g2.clearBuffer();
 
-  // Low Balanace or No Balance
-  if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
+    // Low Balanace or No Balance
+    if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
+      u8g2.setDrawColor(1);
+      u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
+      u8g2.sendBuffer();
+      u8g2.setDrawColor(0);
+      u8g2.setColorIndex(0);
+      setLEDs(CRGB::Orange);
+    } else {
+      setLEDs(CRGB::Cyan);
+    }
+
+    // Display Balance
+    float true_balance = balance;
+    if (free_play == true) {
+      // Free Play
+      const char* string = "FREEPLAY";
+      u8g2.setFont(u8g2_font_logisoso20_tr);  // Choose your font
+      int textWidth = u8g2.getStrWidth(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      #ifdef DISPLAY_I2C_128x32
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      #else
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+      #endif
+      u8g2.drawStr(centerX, centerY, string);
+    } else if (currency_mode == true) {
+      // Currency Mode
+      true_balance = balance * currency_rate;
+      int disBalance = round(true_balance);
+      char string[10];
+      sprintf(string, "%d", disBalance);
+      u8g2.setFont((strlen(string) > 4) ? u8g2_font_logisoso16_tr : u8g2_font_logisoso32_tr);  // Choose your font
+      int textWidth = u8g2.getStrWidth(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + (((strlen(string) > 4) ? 16 : 32) / 2);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (((strlen(string) > 4) ? 16 : 32) / 2);
+      #ifdef DISPLAY_I2C_128x32
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      #else
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+      #endif
+          u8g2.drawStr(centerX, centerY, string);
+      #ifdef DISPLAY_I2C_128x32
+          u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
+          int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      #else
+          u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
+          int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+      #endif
+      u8g2.drawGlyph(centerGlX, centerGlY, (jpn == true) ? 284 : 147);
+    } else {
+      // Credit Mode
+      int disBalance = round(true_balance);
+      char string[10];
+      sprintf(string, "%d", disBalance);
+      u8g2.setFont(u8g2_font_logisoso32_tr);  // Choose your font
+      int textWidth = u8g2.getStrWidth(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      #ifdef DISPLAY_I2C_128x32
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      #else
+          int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+      #endif
+      u8g2.drawStr(centerX, centerY, string);
+    }
+
+    // Add Reason - Low Balance or No Balance
+    if (httpCode != 200 && free_play == false) {
+      #ifdef DISPLAY_I2C_128x32
+          // Nothing
+      #else
+          String lowbal = (httpCode == 400) ? ((sys_jpn == true) ? "お金が足りない" : "Balance to low!") : ((sys_jpn == true) ? "カード残高が少ない" : "Low Balance!");
+          u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+          int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
+          int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
+          u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
+      #endif
+    } else if (free_play == true && time_left != -1 && time_left <= 1800000) {
+      #ifdef DISPLAY_I2C_128x32
+          // Nothing
+      #else
+          unsigned long time_left_ms = time_left % 60000;  // Get remaining milliseconds
+          unsigned int minutes = (time_left - time_left_ms) / 60000;  // Convert to minutes
+          char time_str[20];
+          if (sys_jpn == true) {
+            sprintf(time_str, "残り%d分!", minutes);
+          } else {
+            sprintf(time_str, "%d Minutes Left!", minutes);
+          }
+          u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+          int messageWidth = u8g2.getUTF8Width(time_str);
+          int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
+          u8g2.drawUTF8(centerMsgX, 60, time_str);
+      #endif
+    }
+
+    u8g2.setDrawColor(1);
+    u8g2.sendBuffer();
+
+    if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
+      // Flash Low Balance or No Balance
+      int count = 3;
+      delay(250);
+      while (count > 0) {
+        setLEDs(CRGB::Orange);
+        u8g2.setContrast(1);
+        delay(500);
+        setLEDs((httpCode == 400) ? CRGB::Red : CRGB::Cyan);
+        u8g2.setContrast(255);
+        delay(500);
+        count = count - 1;
+      }
+    } else {
+      // Delay for next read
+      delay(500);
+      setLEDs(0x808080);
+      delay(2500);
+    }
+  } else {
+    if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
+      setLEDs(CRGB::Orange);
+    } else {
+      setLEDs(CRGB::Cyan);
+    }
+    if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
+        // Flash Low Balance or No Balance
+        int count = 3;
+        delay(250);
+        while (count > 0) {
+          setLEDs(CRGB::Orange);
+          delay(500);
+          setLEDs((httpCode == 400) ? CRGB::Red : CRGB::Cyan);
+          delay(500);
+          count = count - 1;
+        }
+      } else {
+        // Delay for next read
+        delay(500);
+        setLEDs(0x808080);
+        delay(2500);
+      }
+    delay(3000);
+  }
+}
+// Display Invalid Card - DS Interupt
+void displayInvalidCard() {
+  if (displayTimeout == 0) {
+    displayState = -1;
+    setLEDs(CRGB::Red);
+    u8g2.setPowerSave(0);
+    u8g2.setContrast(255);
+    u8g2.clearBuffer();
     u8g2.setDrawColor(1);
     u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
     u8g2.sendBuffer();
     u8g2.setDrawColor(0);
     u8g2.setColorIndex(0);
-    setLEDs(CRGB::Orange);
-  } else {
-    setLEDs(CRGB::Cyan);
-  }
-
-  // Display Balance
-  float true_balance = balance;
-  if (free_play == true) {
-    // Free Play
-    const char* string = "FREEPLAY";
-    u8g2.setFont(u8g2_font_logisoso20_tr);  // Choose your font
-    int textWidth = u8g2.getStrWidth(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
+    const char* string = (sys_jpn == true) ? "無効なカード" : "Invalid Card";
     #ifdef DISPLAY_I2C_128x32
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, 328);
     #else
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 121);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
     #endif
-    u8g2.drawStr(centerX, centerY, string);
-  } else if (currency_mode == true) {
-    // Currency Mode
-    true_balance = balance * currency_rate;
-    int disBalance = round(true_balance);
-    char string[10];
-    sprintf(string, "%d", disBalance);
-    u8g2.setFont((strlen(string) > 4) ? u8g2_font_logisoso16_tr : u8g2_font_logisoso32_tr);  // Choose your font
-    int textWidth = u8g2.getStrWidth(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + (((strlen(string) > 4) ? 16 : 32) / 2);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - (((strlen(string) > 4) ? 16 : 32) / 2);
-    #ifdef DISPLAY_I2C_128x32
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    #else
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
-    #endif
-        u8g2.drawStr(centerX, centerY, string);
-    #ifdef DISPLAY_I2C_128x32
-        u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
-        int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    #else
-        u8g2.setFont((strlen(string) > 4) ? u8g2_font_open_iconic_all_2x_t : u8g2_font_open_iconic_all_4x_t);
-        int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
-    #endif
-    u8g2.drawGlyph(centerGlX, centerGlY, (jpn == true) ? 284 : 147);
-  } else {
-    // Credit Mode
-    int disBalance = round(true_balance);
-    char string[10];
-    sprintf(string, "%d", disBalance);
-    u8g2.setFont(u8g2_font_logisoso32_tr);  // Choose your font
-    int textWidth = u8g2.getStrWidth(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    #ifdef DISPLAY_I2C_128x32
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    #else
-        int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 5;
-    #endif
-    u8g2.drawStr(centerX, centerY, string);
-  }
-
-  // Add Reason - Low Balance or No Balance
-  if (httpCode != 200 && free_play == false) {
-    #ifdef DISPLAY_I2C_128x32
-        // Nothing
-    #else
-        String lowbal = (httpCode == 400) ? ((sys_jpn == true) ? "お金が足りない" : "Balance to low!") : ((sys_jpn == true) ? "カード残高が少ない" : "Low Balance!");
-        u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-        int messageWidth = u8g2.getUTF8Width(lowbal.c_str());
-        int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
-        u8g2.drawUTF8(centerMsgX, 60, lowbal.c_str());
-    #endif
-  } else if (free_play == true && time_left != -1 && time_left <= 1800000) {
-    #ifdef DISPLAY_I2C_128x32
-        // Nothing
-    #else
-        unsigned long time_left_ms = time_left % 60000;  // Get remaining milliseconds
-        unsigned int minutes = (time_left - time_left_ms) / 60000;  // Convert to minutes
-        char time_str[20];
-        if (sys_jpn == true) {
-          sprintf(time_str, "残り%d分!", minutes);
-        } else {
-          sprintf(time_str, "%d Minutes Left!", minutes);
-        }
-        u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-        int messageWidth = u8g2.getUTF8Width(time_str);
-        int centerMsgX = (u8g2.getWidth() - messageWidth) / 2;
-        u8g2.drawUTF8(centerMsgX, 60, time_str);
-    #endif
-  }
-
-  u8g2.setDrawColor(1);
-  u8g2.sendBuffer();
-
-  if ((httpCode != 200 && free_play == false) || (free_play == true && time_left != -1 && time_left <= 1800000)) {
-    // Flash Low Balance or No Balance
+    u8g2.setDrawColor(1);
+    u8g2.sendBuffer();
     int count = 3;
     delay(250);
     while (count > 0) {
-      setLEDs(CRGB::Orange);
       u8g2.setContrast(1);
       delay(500);
-      setLEDs((httpCode == 400) ? CRGB::Red : CRGB::Cyan);
       u8g2.setContrast(255);
       delay(500);
       count = count - 1;
     }
   } else {
-    // Delay for next read
-    delay(500);
-    setLEDs(0x808080);
-    delay(2500);
-  }
-}
-// Display Invalid Card - DS Interupt
-void displayInvalidCard() {
-  displayState = -1;
-  setLEDs(CRGB::Red);
-  u8g2.setPowerSave(0);
-  u8g2.setContrast(255);
-  u8g2.clearBuffer();
-  u8g2.setDrawColor(1);
-  u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
-  u8g2.sendBuffer();
-  u8g2.setDrawColor(0);
-  u8g2.setColorIndex(0);
-  const char* string = (sys_jpn == true) ? "無効なカード" : "Invalid Card";
-  #ifdef DISPLAY_I2C_128x32
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_all_t);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawGlyph(centerGlX, centerGlY, 328);
-  #else
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, 121);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, 55, string);
-  #endif
-  u8g2.setDrawColor(1);
-  u8g2.sendBuffer();
-  int count = 3;
-  delay(250);
-  while (count > 0) {
-    u8g2.setContrast(1);
-    delay(500);
-    u8g2.setContrast(255);
-    delay(500);
-    count = count - 1;
+    setLEDs(CRGB::Red);
+    delay(1250);
   }
 }
 // Display Account Issue Response - DS Interupt
 void displayAccountIssue(int httpCode, String message) {
-  displayState = -1;
-  setLEDs(CRGB::Red);
-  u8g2.setPowerSave(0);
-  u8g2.setContrast(255);
-  u8g2.clearBuffer();
-  u8g2.setDrawColor(1);
-  u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
-  u8g2.sendBuffer();
-  u8g2.setDrawColor(0);
-  u8g2.setColorIndex(0);
-  const char* string = (httpCode == 407) ? ((sys_jpn == true) ? "減速する!" : "Slow down!") : ((sys_jpn == true) ? "アテンダントを参照" : "See Attendant");
-  #ifdef DISPLAY_I2C_128x32
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_all_t);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 489 : 328);
-  #else
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 123 : 121);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, 55, string);
-  #endif
-  u8g2.setDrawColor(1);
-  u8g2.sendBuffer();
-  int count = 3;
-  delay(250);
-  while (count > 0) {
-    u8g2.setContrast(1);
-    delay(500);
+  if (displayTimeout == 0) {
+    displayState = -1;
+    setLEDs(CRGB::Red);
+    u8g2.setPowerSave(0);
     u8g2.setContrast(255);
-    delay(500);
-    count = count - 1;
+    u8g2.clearBuffer();
+    u8g2.setDrawColor(1);
+    u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
+    u8g2.sendBuffer();
+    u8g2.setDrawColor(0);
+    u8g2.setColorIndex(0);
+    const char* string = (httpCode == 407) ? ((sys_jpn == true) ? "減速する!" : "Slow down!") : ((sys_jpn == true) ? "アテンダントを参照" : "See Attendant");
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 489 : 328);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, (httpCode == 407) ? 123 : 121);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+    #endif
+    u8g2.setDrawColor(1);
+    u8g2.sendBuffer();
+    int count = 3;
+    delay(250);
+    while (count > 0) {
+      u8g2.setContrast(1);
+      delay(500);
+      u8g2.setContrast(255);
+      delay(500);
+      count = count - 1;
+    }
+  } else {
+    setLEDs(CRGB::Red);
+    delay(1250);
   }
 }
 // Display Communication Error - DS Interupt (TODO)
 void displayCommunicationError() {
-  displayState = -1;
+  if (displayTimeout == 0) {
+    displayState = -1;
+    u8g2.setPowerSave(0);
+    u8g2.setContrast(255);
+    u8g2.clearBuffer();
+    u8g2.setDrawColor(1);
+    u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
+    u8g2.sendBuffer();
+    u8g2.setDrawColor(0);
+    u8g2.setColorIndex(0);
+    const char* string = (sys_jpn == true) ? "接続の問題" : "Comm Failure";
+    #ifdef DISPLAY_I2C_128x32
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
+      int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawUTF8(centerX, centerY, string);
+      u8g2.setFont(u8g2_font_streamline_all_t);
+      int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
+      u8g2.drawGlyph(centerGlX, centerGlY, 328);
+    #else
+      u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
+      int centerGlX = (u8g2.getWidth() - 32) / 2;
+      int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
+      u8g2.drawGlyph(centerGlX, centerGlY, 121);
+      u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
+      int textWidth = u8g2.getUTF8Width(string);
+      int centerX = (u8g2.getWidth() - textWidth) / 2;
+      u8g2.drawUTF8(centerX, 55, string);
+    #endif
+    u8g2.setDrawColor(1);
+    u8g2.sendBuffer();
+  }
   setLEDs(CRGB::Black);
-  u8g2.setPowerSave(0);
-  u8g2.setContrast(255);
-  u8g2.clearBuffer();
-  u8g2.setDrawColor(1);
-  u8g2.drawBox(0, 0, u8g2.getWidth(), u8g2.getHeight());
-  u8g2.sendBuffer();
-  u8g2.setDrawColor(0);
-  u8g2.setColorIndex(0);
-  const char* string = (sys_jpn == true) ? "接続の問題" : "Comm Failure";
-  #ifdef DISPLAY_I2C_128x32
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = ((u8g2.getWidth() - textWidth) / 2) + 14;
-    int centerY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawUTF8(centerX, centerY, string);
-    u8g2.setFont(u8g2_font_streamline_all_t);
-    int centerGlX = ((u8g2.getWidth() - textWidth) / 2) - 14;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2);
-    u8g2.drawGlyph(centerGlX, centerGlY, 328);
-  #else
-    u8g2.setFont(u8g2_font_open_iconic_all_4x_t);
-    int centerGlX = (u8g2.getWidth() - 32) / 2;
-    int centerGlY = (u8g2.getHeight() / 2 + u8g2.getAscent() / 2) - 10;
-    u8g2.drawGlyph(centerGlX, centerGlY, 121);
-    u8g2.setFont((sys_jpn == true) ? u8g2_font_b12_t_japanese1 : u8g2_font_HelvetiPixel_tr);  // Choose your font
-    int textWidth = u8g2.getUTF8Width(string);
-    int centerX = (u8g2.getWidth() - textWidth) / 2;
-    u8g2.drawUTF8(centerX, 55, string);
-  #endif
-  u8g2.setDrawColor(1);
-  u8g2.sendBuffer();
   delay(3000);
 }
 // Display Boot Messages - DS Interupt
@@ -882,8 +1331,7 @@ void bootScreen(String input_message) {
 }
 // Display "Game Over" on Reader Disable - DS 55
 void displayDisableReader() {
-  if (displayState != 55) {
-    setLEDs(CRGB::Black);
+  if (displayTimeout == 0 && displayState != 55) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
@@ -906,11 +1354,11 @@ void displayDisableReader() {
     u8g2.sendBuffer();
     displayState = 55;
   }
+  setLEDs(CRGB::Black);
 }
 // Display Blockd Callback "Wait a moment" - DS 50
 void displayBootUpReader() {
-  if (displayState != 50) {
-    setLEDs(CRGB::Black);
+  if (displayTimeout == 0 && displayState != 50) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
@@ -935,11 +1383,11 @@ void displayBootUpReader() {
     u8g2.sendBuffer();
     displayState = 50;
   }
+  setLEDs(CRGB::Black);
 }
 // Display Page 2 Display on Button Hold (Enabled) - DS 49
 void displayButtonDisplayEnabled() {
-  if (displayState != 49) {
-    setLEDs(CRGB::Black);
+  if (displayTimeout == 0 && displayState != 49) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(1);
     u8g2.clearBuffer();
@@ -984,10 +1432,11 @@ void displayButtonDisplayEnabled() {
     u8g2.sendBuffer();
     displayState = 49;
   }
+  setLEDs(CRGB::Black);
 }
 // Display Page 2 Display on Button Hold (Disabled) - DS 48
 void displayButtonDisplayDisabled() {
-  if (displayState != 48) {
+  if (displayTimeout == 0 && displayState != 48) {
     u8g2.setPowerSave(0);
     u8g2.setContrast(128);
     u8g2.clearBuffer();
@@ -1009,14 +1458,13 @@ void displayButtonDisplayDisabled() {
 }
 // Turn Off Display and LED - DS 255
 void sleepDevice() {
-  if (displayState != 255) {
+  if (displayTimeout == 0 && displayState != 255) {
     u8g2.clearBuffer();
     u8g2.sendBuffer();
-    setLEDs(CRGB::Black);
-    FastLED.show();
     u8g2.setPowerSave(1);
     displayState = 255;
   }
+  setLEDs(CRGB::Black);
 }
 // Set LED
 void setLEDs(CRGB color) {
