@@ -1325,8 +1325,9 @@ app.get('/update/user/:user', manageAuth, (req, res) => {
 app.get('/register/new/:user/:card', manageAuth, (req, res) => {
     if (db.cards && db.users) {
         try {
-            if (db.users[req.params.user] === undefined) {
-                const user = {
+            const userId = (req.params.user !== 'NULL') ? req.params.user : `user-${(Date.now()).valueOf()}`
+            if (db.users[userId] === undefined) {
+                db.users[userId] = {
                     credits: (req.query.credits && !isNaN(parseFloat(req.query.credits))) ? parseFloat(req.query.credits) : 0,
                     name: (req.query.user_name) ? decodeURIComponent(req.query.user_name) : null,
                     contact: (req.query.user_contact) ? decodeURIComponent(req.query.user_contact) : null,
@@ -1334,23 +1335,19 @@ app.get('/register/new/:user/:card', manageAuth, (req, res) => {
                     locked: false,
                     free_play: false,
                     date_created: Date.now().valueOf(),
+                };
+                if (req.query.credits && !isNaN(parseFloat(req.query.credits))) {
+                    db.users[userId].credits = db.users[userId].credits + parseFloat(req.query.credits);
+                    if (!history.topup_log[userId])
+                        history.topup_log[userId] = [];
+                    history.topup_log[userId].push({
+                        card: false,
+                        cost: req.query.credits,
+                        time: Date.now().valueOf()
+                    })
                 }
-                db.users[req.params.user] = user;
-                console.log(`User Created: ${req.params.user}`, user)
-            } else if (req.query.credits && !isNaN(parseFloat(req.query.credits))) {
-                db.users[req.params.user].credits = db.users[req.params.user].credits + parseFloat(req.query.credits);
-                if (!history.topup_log[req.params.user])
-                    history.topup_log[req.params.user] = [];
-                history.topup_log[req.params.user].push({
-                    card: false,
-                    cost: req.query.credits,
-                    time: Date.now().valueOf()
-                })
-            }
-            if (db.users[req.params.user] !== undefined &&
-                db.cards[req.params.card] === undefined) {
                 let card = {
-                    user: req.params.user,
+                    user: userId,
                     name: (req.query.card_name) ? decodeURIComponent(req.query.card_name) : null,
                     contact: (req.query.card_contact) ? decodeURIComponent(req.query.card_contact) : null,
                     locked: false
@@ -1358,8 +1355,8 @@ app.get('/register/new/:user/:card', manageAuth, (req, res) => {
                 db.cards[req.params.card] = card;
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(saveDatabase, 5000);
-                console.log(`New Card Created: ${req.params.card} for ${req.params.user}`, card)
-                res.status(200).send(`Registered Card ${req.params.card} for ${req.params.user}`);
+                console.log(`New Card Created: ${req.params.card} for ${userId}`, card)
+                res.status(200).send(`Registered Card ${req.params.card} for ${userId}`);
             } else {
                 console.error(`Card Possibly Already Exists: ${req.params.card}`, db.cards[req.params.card])
                 res.status(400).send("Card Already Exists!");

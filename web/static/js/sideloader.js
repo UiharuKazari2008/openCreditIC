@@ -72,7 +72,7 @@ function registerUser() {
     } catch (e) {
         console.error(`Failed to parse card info`, e)
     }
-    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL : '') + `/register/${(createCard) ? 'new' : 'scan'}/${machineID}${(createUser) ? '/' + createUser : ''}`;
+    _url.pathname = ((typeof SEQ_APP_URL !== 'undefined') ? SEQ_APP_URL : '') + `/register/${(createCard) ? 'new' : 'scan'}/${(createCard) ? ((createUser) ? createUser : 'NULL') + '/' + createCard : machineID + ((createUser) ? '/' + createUser : '')}`;
     $.ajax({
         type: "GET",
         url: _url, data: '',
